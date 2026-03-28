@@ -28,9 +28,11 @@ export default function PaymentPage() {
       )
     : members;
 
-  const upiString = selected
-    ? `upi://pay?pn=${encodeURIComponent(selected.name)}&am=${amount}&cu=INR&tn=${encodeURIComponent(`${selected.name} - Gym Fee`)}`
-    : "";
+  const UPI_ID = "baubaumendhra@okaxis";
+
+const upiString = selected
+  ? `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Gym Payment")}&am=${amount}&cu=INR&tn=${encodeURIComponent(`${selected.name} - Gym Fee`)}`
+  : "";
 
   const handleConfirm = async () => {
     if (!selected) return;
