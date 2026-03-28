@@ -14,7 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      members: {
+        Row: {
+          created_at: string
+          id: string
+          last_payment_date: string | null
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_payment_date?: string | null
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_payment_date?: string | null
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          date: string
+          id: string
+          member_id: string
+          mode: string
+          note: string | null
+        }
+        Insert: {
+          amount: number
+          date?: string
+          id?: string
+          member_id: string
+          mode: string
+          note?: string | null
+        }
+        Update: {
+          amount?: number
+          date?: string
+          id?: string
+          member_id?: string
+          mode?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
