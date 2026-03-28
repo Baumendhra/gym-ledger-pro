@@ -60,7 +60,7 @@ export default function Dashboard() {
           </h2>
           <div className="space-y-2">
             {overdueMembers.slice(0, 3).map((m) => (
-              <MemberCard key={m._id} member={m} />
+              <MemberCard key={m.id} member={m} />
             ))}
           </div>
         </div>
@@ -74,7 +74,7 @@ export default function Dashboard() {
           </h2>
           <div className="space-y-2">
             {dueSoonMembers.map((m) => (
-              <MemberCard key={m._id} member={m} />
+              <MemberCard key={m.id} member={m} />
             ))}
           </div>
         </div>
