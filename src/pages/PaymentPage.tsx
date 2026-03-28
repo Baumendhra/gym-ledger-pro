@@ -36,7 +36,7 @@ export default function PaymentPage() {
     if (!selected) return;
     try {
       await createPayment.mutateAsync({
-        member_id: selected._id,
+        member_id: selected.id,
         amount,
         mode,
         note: `${selected.name} - ${new Date().toLocaleDateString("en-IN", { month: "long" })}`,
@@ -86,8 +86,8 @@ export default function PaymentPage() {
             </div>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
               {filtered.map((m) => (
-                <button
-                  key={m._id}
+                 <button
+                  key={m.id}
                   onClick={() => setSelected(m)}
                   className="w-full flex items-center gap-3 p-3 rounded-lg glass-card hover:shadow-md transition-all active:scale-[0.98] text-left"
                 >

@@ -14,7 +14,7 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
   
   const handleClick = () => {
     if (onClick) onClick();
-    else navigate(`/member/${member._id}`);
+    else navigate(`/member/${member.id}`);
   };
 
   return (

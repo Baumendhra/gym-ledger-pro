@@ -11,7 +11,7 @@ export default function MemberDetail() {
   const { data: members = [] } = useMembers();
   const { data: payments = [], isLoading } = usePayments(id || "");
 
-  const member = members.find((m) => m._id === id);
+  const member = members.find((m) => m.id === id);
 
   if (!member) {
     return (
@@ -55,7 +55,7 @@ export default function MemberDetail() {
         </div>
         <div className="glass-card rounded-lg p-3 text-center">
           <p className="text-xs text-muted-foreground">Member Since</p>
-          <p className="font-semibold text-sm mt-1">{formatDate(member.createdAt)}</p>
+          <p className="font-semibold text-sm mt-1">{formatDate(member.created_at)}</p>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export default function MemberDetail() {
         ) : (
           <div className="space-y-1">
             {payments.map((p, i) => (
-              <div key={p._id} className="flex items-center gap-3 py-3 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+              <div key={p.id} className="flex items-center gap-3 py-3 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-status-paid-bg flex items-center justify-center">
                   {p.mode === "UPI" ? (
                     <CreditCard className="w-4 h-4 text-status-paid" />

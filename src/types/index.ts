@@ -1,20 +1,20 @@
 export interface Member {
-  _id: string;
+  id: string;
   name: string;
   phone: string;
   last_payment_date: string | null;
-  createdAt: string;
+  created_at: string;
 }
 
 export type PaymentMode = "UPI" | "Cash";
 
 export interface Payment {
-  _id: string;
+  id: string;
   member_id: string;
   amount: number;
-  mode: PaymentMode;
+  mode: string;
   date: string;
-  note: string;
+  note: string | null;
 }
 
 export type MemberStatus = "paid" | "due" | "overdue";
