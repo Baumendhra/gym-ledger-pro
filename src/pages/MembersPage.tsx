@@ -92,7 +92,7 @@ export default function MembersPage() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">No members found</p>
         ) : (
-          filtered.map((m) => <MemberCard key={m._id} member={m} />)
+          filtered.map((m) => <MemberCard key={m.id} member={m} />)
         )}
       </div>
     </div>

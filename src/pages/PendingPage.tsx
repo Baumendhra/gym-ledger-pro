@@ -53,7 +53,7 @@ export default function PendingPage() {
       ) : (
         <div className="space-y-3">
           {pending.map((m) => (
-            <div key={m._id} className="glass-card rounded-lg p-4 space-y-3 animate-slide-up">
+            <div key={m.id} className="glass-card rounded-lg p-4 space-y-3 animate-slide-up">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
@@ -79,7 +79,7 @@ export default function PendingPage() {
                 <Button
                   size="sm"
                   className="flex-1 gap-1.5"
-                  onClick={() => handleQuickPay(m._id, m.name)}
+                  onClick={() => handleQuickPay(m.id, m.name)}
                 >
                   <IndianRupee className="w-3.5 h-3.5" /> Mark Paid
                 </Button>
