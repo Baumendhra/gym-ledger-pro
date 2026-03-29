@@ -21,6 +21,7 @@ export type Database = {
           last_payment_date: string | null
           name: string
           phone: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -28,6 +29,7 @@ export type Database = {
           last_payment_date?: string | null
           name: string
           phone: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -35,6 +37,7 @@ export type Database = {
           last_payment_date?: string | null
           name?: string
           phone?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -72,6 +75,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          gym_name: string
+          id: string
+          owner_name: string
+        }
+        Insert: {
+          created_at?: string
+          gym_name?: string
+          id: string
+          owner_name?: string
+        }
+        Update: {
+          created_at?: string
+          gym_name?: string
+          id?: string
+          owner_name?: string
+        }
+        Relationships: []
       }
     }
     Views: {
