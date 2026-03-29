@@ -8,7 +8,7 @@ interface MemberCardProps {
   member: MemberWithStatus;
   onClick?: () => void;
 }
-
+ 
 export function MemberCard({ member, onClick }: MemberCardProps) {
   const navigate = useNavigate();
   
