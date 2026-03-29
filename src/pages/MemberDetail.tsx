@@ -46,6 +46,7 @@ export default function MemberDetail() {
             <Phone className="w-3.5 h-3.5" />
             <span>{member.phone}</span>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">{member.batch} batch</p>
         </div>
       </div>
 
@@ -63,7 +64,7 @@ export default function MemberDetail() {
 
       {/* Actions */}
       <div className="flex gap-2">
-        <Button className="flex-1" onClick={() => navigate("/payment")}>
+        <Button className="flex-1" onClick={() => navigate(`/payment?memberId=${member.id}`)}>
           <CreditCard className="w-4 h-4 mr-2" /> Collect Payment
         </Button>
         <Button

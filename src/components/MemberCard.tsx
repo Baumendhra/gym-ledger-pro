@@ -27,9 +27,8 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold truncate">{member.name}</p>
-        <p className="text-xs text-muted-foreground">
-          Last paid: {formatDate(member.last_payment_date)}
-        </p>
+        <p className="text-xs text-muted-foreground">{member.batch} batch</p>
+        <p className="text-xs text-muted-foreground">Last paid: {formatDate(member.last_payment_date)}</p>
       </div>
       <div className="flex items-center gap-2">
         <StatusBadge status={member.status} />

@@ -2,9 +2,12 @@ export interface Member {
   id: string;
   name: string;
   phone: string;
+  batch: Batch;
   last_payment_date: string | null;
   created_at: string;
 }
+
+export type Batch = "Morning" | "Evening";
 
 export type PaymentMode = "UPI" | "Cash";
 

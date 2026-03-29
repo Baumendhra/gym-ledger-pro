@@ -13,11 +13,12 @@ function downloadCSV(filename: string, csvContent: string) {
 }
 
 export function exportMembersCSV(members: MemberWithStatus[]) {
-  const header = "Name,Phone,Status,Last Payment,Due Date,Overdue Days,Member Since\n";
+  const header = "Name,Phone,Batch,Status,Last Payment,Due Date,Overdue Days,Member Since\n";
   const rows = members.map((m) =>
     [
       `"${m.name}"`,
       m.phone,
+      m.batch,
       m.status,
       formatDate(m.last_payment_date),
       m.dueDate ? formatDate(m.dueDate) : "N/A",

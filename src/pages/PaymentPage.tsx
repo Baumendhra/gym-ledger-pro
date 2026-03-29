@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMembers, useCreatePayment } from "@/hooks/useMembers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,17 +8,20 @@ import { Search, CheckCircle2, Banknote, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MemberWithStatus } from "@/types";
+import { useSearchParams } from "react-router-dom";
 
 const QUICK_AMOUNTS = [500, 1000, 1500, 2000];
 
 export default function PaymentPage() {
   const { data: members = [] } = useMembers();
   const createPayment = useCreatePayment();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<MemberWithStatus | null>(null);
   const [amount, setAmount] = useState(1000);
   const [mode, setMode] = useState<"UPI" | "Cash">("UPI");
   const [confirmed, setConfirmed] = useState(false);
+  const memberIdFromQuery = searchParams.get("memberId");
 
   const filtered = search
     ? members.filter(
@@ -28,11 +31,25 @@ export default function PaymentPage() {
       )
     : members;
 
-  const UPI_ID = "baubaumendhra@okaxis";
+  useEffect(() => {
+    if (!memberIdFromQuery || members.length === 0) return;
+    const memberFromQuery = members.find((member) => member.id === memberIdFromQuery);
+    if (memberFromQuery) {
+      setSelected(memberFromQuery);
+      setSearch(memberFromQuery.name);
+    }
+  }, [memberIdFromQuery, members]);
 
-const upiString = selected
-  ? `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Gym Payment")}&am=${amount}&cu=INR&tn=${encodeURIComponent(`${selected.name} - Gym Fee`)}`
-  : "";
+  const UPI_ID = "dharshansmd-1@oksbi";
+  const UPI_NAME = "Dharshan S.M";
+
+  const upiString = useMemo(
+    () =>
+      selected
+        ? `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&cu=INR&tn=${encodeURIComponent(`${selected.name} - Gym Fee`)}`
+        : "",
+    [selected, amount]
+  );
 
   const handleConfirm = async () => {
     if (!selected) return;
@@ -164,6 +181,8 @@ const upiString = selected
             {mode === "UPI" && (
               <div className="flex flex-col items-center py-4 gap-3 glass-card rounded-xl">
                 <QRCodeSVG value={upiString} size={180} className="rounded-lg" />
+                <p className="text-sm font-medium">{UPI_NAME}</p>
+                <p className="text-xs text-muted-foreground">UPI ID: {UPI_ID}</p>
                 <p className="text-xs text-muted-foreground">Scan to pay via any UPI app</p>
               </div>
             )}

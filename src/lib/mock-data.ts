@@ -10,14 +10,14 @@ function daysAgo(n: number): string {
 }
 
 export const mockMembers: Member[] = [
-  { id: "1", name: "Ravi Kumar", phone: "9876543210", last_payment_date: daysAgo(5), created_at: daysAgo(90) },
-  { id: "2", name: "Amit Sharma", phone: "9876543211", last_payment_date: daysAgo(28), created_at: daysAgo(120) },
-  { id: "3", name: "Priya Singh", phone: "9876543212", last_payment_date: daysAgo(35), created_at: daysAgo(60) },
-  { id: "4", name: "Suresh Patel", phone: "9876543213", last_payment_date: daysAgo(15), created_at: daysAgo(200) },
-  { id: "5", name: "Neha Gupta", phone: "9876543214", last_payment_date: daysAgo(45), created_at: daysAgo(150) },
-  { id: "6", name: "Vikram Yadav", phone: "9876543215", last_payment_date: daysAgo(2), created_at: daysAgo(30) },
-  { id: "7", name: "Anjali Verma", phone: "9876543216", last_payment_date: null, created_at: daysAgo(10) },
-  { id: "8", name: "Deepak Joshi", phone: "9876543217", last_payment_date: daysAgo(29), created_at: daysAgo(180) },
+  { id: "1", name: "Ravi Kumar", phone: "9876543210", batch: "Morning", last_payment_date: daysAgo(5), created_at: daysAgo(90) },
+  { id: "2", name: "Amit Sharma", phone: "9876543211", batch: "Evening", last_payment_date: daysAgo(28), created_at: daysAgo(120) },
+  { id: "3", name: "Priya Singh", phone: "9876543212", batch: "Morning", last_payment_date: daysAgo(35), created_at: daysAgo(60) },
+  { id: "4", name: "Suresh Patel", phone: "9876543213", batch: "Evening", last_payment_date: daysAgo(15), created_at: daysAgo(200) },
+  { id: "5", name: "Neha Gupta", phone: "9876543214", batch: "Morning", last_payment_date: daysAgo(45), created_at: daysAgo(150) },
+  { id: "6", name: "Vikram Yadav", phone: "9876543215", batch: "Evening", last_payment_date: daysAgo(2), created_at: daysAgo(30) },
+  { id: "7", name: "Anjali Verma", phone: "9876543216", batch: "Morning", last_payment_date: null, created_at: daysAgo(10) },
+  { id: "8", name: "Deepak Joshi", phone: "9876543217", batch: "Evening", last_payment_date: daysAgo(29), created_at: daysAgo(180) },
 ];
 
 export const mockPayments: Payment[] = [
@@ -34,11 +34,12 @@ let payments = [...mockPayments];
 
 export const mockApi = {
   getMembers: async (): Promise<Member[]> => members,
-  createMember: async (data: { name: string; phone: string }): Promise<Member> => {
+  createMember: async (data: { name: string; phone: string; batch: "Morning" | "Evening" }): Promise<Member> => {
     const m: Member = {
       id: String(Date.now()),
       name: data.name,
       phone: data.phone,
+      batch: data.batch,
       last_payment_date: null,
       created_at: new Date().toISOString(),
     };
