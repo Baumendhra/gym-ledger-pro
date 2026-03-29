@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/BottomNav";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import Dashboard from "@/pages/Dashboard";
 import MembersPage from "@/pages/MembersPage";
 import PaymentPage from "@/pages/PaymentPage";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/*" element={<ProtectedRoutes />} />
             </Routes>
+            <InstallPrompt />
           </div>
         </AuthProvider>
       </BrowserRouter>
