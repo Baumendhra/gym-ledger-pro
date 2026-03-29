@@ -3,7 +3,7 @@ import { useMembers, useCreateMember } from "@/hooks/useMembers";
 import { MemberCard } from "@/components/MemberCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { exportMembersCSV } from "@/lib/export";
 import type { Batch } from "@/types";
 import { Search, Plus, Download } from "lucide-react";
@@ -66,6 +66,7 @@ export default function MembersPage() {
             <DialogContent className="mx-4 max-w-sm">
               <DialogHeader>
                 <DialogTitle>Add New Member</DialogTitle>
+                <DialogDescription className="sr-only">Enter the details of the new member below.</DialogDescription>
               </DialogHeader>
               <div className="space-y-3 pt-2">
                 <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
