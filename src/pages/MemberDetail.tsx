@@ -3,7 +3,7 @@ import { useMembers, usePayments } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatCurrency } from "@/lib/status";
 import { exportPaymentsCSV } from "@/lib/export";
-import { ArrowLeft, Phone, CreditCard, Banknote, Download } from "lucide-react";
+import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -65,6 +65,21 @@ export default function MemberDetail() {
       <div className="flex gap-2">
         <Button className="flex-1" onClick={() => navigate("/payment")}>
           <CreditCard className="w-4 h-4 mr-2" /> Collect Payment
+        </Button>
+        <Button
+          variant="outline"
+          className="px-3"
+          onClick={() => {
+            const msg = encodeURIComponent(
+              member.status === "overdue" || member.status === "due"
+                ? `Hi ${member.name}, your gym fee is pending. Please clear it at your earliest convenience. — GymKhata Pro`
+                : `Hi ${member.name}, `
+            );
+            window.open(`https://wa.me/91${member.phone}?text=${msg}`, "_blank");
+          }}
+          title="Send WhatsApp Message"
+        >
+          <MessageCircle className="w-4 h-4 text-green-600" />
         </Button>
         <Button
           variant="outline"
