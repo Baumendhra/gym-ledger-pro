@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getMemberStatus } from "@/lib/status";
+import { useAuth } from "@/hooks/useAuth";
 import type { Member, Payment } from "@/types";
 
 export function useMembers() {
@@ -19,11 +20,12 @@ export function useMembers() {
 
 export function useCreateMember() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (data: { name: string; phone: string }) => {
       const { data: member, error } = await supabase
         .from("members")
-        .insert({ name: data.name, phone: data.phone })
+        .insert({ name: data.name, phone: data.phone, user_id: user?.id })
         .select()
         .single();
       if (error) throw error;
@@ -53,7 +55,6 @@ export function useCreatePayment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (data: { member_id: string; amount: number; mode: string; note?: string }) => {
-      // Insert payment
       const { data: payment, error } = await supabase
         .from("payments")
         .insert({
@@ -66,7 +67,6 @@ export function useCreatePayment() {
         .single();
       if (error) throw error;
 
-      // Update member's last_payment_date
       const { error: updateError } = await supabase
         .from("members")
         .update({ last_payment_date: new Date().toISOString() })
