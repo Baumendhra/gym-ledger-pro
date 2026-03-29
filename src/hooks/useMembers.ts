@@ -21,13 +21,19 @@ export function useMembers() {
 export function useCreateMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name: string; phone: string; batch: "Morning" | "Evening" }) => {
+    mutationFn: async (data: { name: string; phone: string; batch: "Morning" | "Evening"; membership_type?: string }) => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error("Authentication required to add members");
 
       const { data: member, error } = await supabase
         .from("members")
-        .insert({ name: data.name, phone: data.phone, batch: data.batch, user_id: user.id })
+        .insert({ 
+          name: data.name, 
+          phone: data.phone, 
+          batch: data.batch, 
+          membership_type: data.membership_type || "Regular",
+          user_id: user.id 
+        })
         .select()
         .single();
         

@@ -72,7 +72,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">⚠ Needs Attention</h2>
           <div className="space-y-2">
             {overdueMembers.slice(0, 3).map((m) => (
-              <MemberCard key={m.id} member={m} />
+              <MemberCard key={m.id} member={m} navigateToPayment={true} />
             ))}
           </div>
         </div>

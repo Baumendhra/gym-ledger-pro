@@ -3,11 +3,13 @@ export interface Member {
   name: string;
   phone: string;
   batch: Batch;
+  membership_type?: MembershipType;
   last_payment_date: string | null;
   created_at: string;
 }
 
 export type Batch = "Morning" | "Evening";
+export type MembershipType = "Regular" | "Premium" | "Sessions";
 
 export type PaymentMode = "UPI" | "Cash";
 

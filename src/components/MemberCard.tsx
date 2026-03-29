@@ -7,13 +7,15 @@ import { useNavigate } from "react-router-dom";
 interface MemberCardProps {
   member: MemberWithStatus;
   onClick?: () => void;
+  navigateToPayment?: boolean;
 }
  
-export function MemberCard({ member, onClick }: MemberCardProps) {
+export function MemberCard({ member, onClick, navigateToPayment }: MemberCardProps) {
   const navigate = useNavigate();
   
   const handleClick = () => {
     if (onClick) onClick();
+    else if (navigateToPayment) navigate(`/payment?memberId=${member.id}`);
     else navigate(`/member/${member.id}`);
   };
 
@@ -27,7 +29,7 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold truncate">{member.name}</p>
-        <p className="text-xs text-muted-foreground">{member.batch} batch</p>
+        <p className="text-xs text-muted-foreground">{member.batch} batch {member.membership_type ? `• ${member.membership_type}` : ''}</p>
         <p className="text-xs text-muted-foreground">Last paid: {formatDate(member.last_payment_date)}</p>
       </div>
       <div className="flex items-center gap-2">

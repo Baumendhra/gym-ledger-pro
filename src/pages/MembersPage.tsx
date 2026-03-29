@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { exportMembersCSV } from "@/lib/export";
-import type { Batch } from "@/types";
+import type { Batch, MembershipType } from "@/types";
 import { Search, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +17,7 @@ export default function MembersPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [batch, setBatch] = useState<Batch>("Morning");
+  const [membershipType, setMembershipType] = useState<MembershipType>("Regular");
 
   const filtered = members.filter(
     (m) =>
@@ -30,11 +31,12 @@ export default function MembersPage() {
       return;
     }
     try {
-      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), batch });
+      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), batch, membership_type: membershipType });
       toast.success(`${name} added successfully`);
       setName("");
       setPhone("");
       setBatch("Morning");
+      setMembershipType("Regular");
       setOpen(false);
     } catch {
       toast.error("Failed to add member");
@@ -80,6 +82,22 @@ export default function MembersPage() {
                         type="button"
                         variant={batch === option ? "default" : "outline"}
                         onClick={() => setBatch(option)}
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Membership Type</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["Regular", "Premium", "Sessions"] as MembershipType[]).map((option) => (
+                      <Button
+                        key={option}
+                        type="button"
+                        variant={membershipType === option ? "default" : "outline"}
+                        onClick={() => setMembershipType(option)}
+                        className="text-xs"
                       >
                         {option}
                       </Button>
