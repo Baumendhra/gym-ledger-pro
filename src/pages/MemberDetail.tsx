@@ -2,8 +2,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMembers, usePayments } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatCurrency } from "@/lib/status";
-import { ArrowLeft, Phone, CreditCard, Banknote } from "lucide-react";
+import { exportPaymentsCSV } from "@/lib/export";
+import { ArrowLeft, Phone, CreditCard, Banknote, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function MemberDetail() {
   const { id } = useParams<{ id: string }>();
@@ -60,9 +62,19 @@ export default function MemberDetail() {
       </div>
 
       {/* Actions */}
-      <Button className="w-full" onClick={() => navigate("/payment")}>
-        <CreditCard className="w-4 h-4 mr-2" /> Collect Payment
-      </Button>
+      <div className="flex gap-2">
+        <Button className="flex-1" onClick={() => navigate("/payment")}>
+          <CreditCard className="w-4 h-4 mr-2" /> Collect Payment
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => { exportPaymentsCSV(payments, member.name); toast.success("Payments exported"); }}
+          title="Export payments CSV"
+        >
+          <Download className="w-4 h-4" />
+        </Button>
+      </div>
 
       {/* Payment Timeline */}
       <div className="space-y-2">

@@ -1,15 +1,25 @@
 import { useMembers } from "@/hooks/useMembers";
+import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/StatCard";
 import { MemberCard } from "@/components/MemberCard";
 import { formatCurrency } from "@/lib/status";
-import { IndianRupee, Users, AlertTriangle, Clock, Dumbbell } from "lucide-react";
+import { exportMembersCSV } from "@/lib/export";
+import { IndianRupee, Users, AlertTriangle, Clock, Dumbbell, LogOut, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const { data: members = [], isLoading } = useMembers();
+  const { signOut } = useAuth();
 
   const overdueMembers = members.filter((m) => m.status === "overdue");
   const dueSoonMembers = members.filter((m) => m.status === "due");
   const paidMembers = members.filter((m) => m.status === "paid");
+
+  const handleLogout = async () => {
+    await signOut();
+    toast.success("Signed out");
+  };
 
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto space-y-6">
@@ -18,26 +28,31 @@ export default function Dashboard() {
         <div className="p-2.5 rounded-xl bg-primary text-primary-foreground">
           <Dumbbell className="w-6 h-6" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-bold tracking-tight">GymKhata Pro</h1>
           <p className="text-xs text-muted-foreground">
             {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { exportMembersCSV(members); toast.success("Members exported"); }}
+            title="Export CSV"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleLogout} title="Sign out">
+            <LogOut className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="Total Members"
-          value={members.length}
-          icon={<Users className="w-5 h-5" />}
-        />
-        <StatCard
-          label="Paid"
-          value={paidMembers.length}
-          icon={<IndianRupee className="w-5 h-5" />}
-        />
+        <StatCard label="Total Members" value={members.length} icon={<Users className="w-5 h-5" />} />
+        <StatCard label="Paid" value={paidMembers.length} icon={<IndianRupee className="w-5 h-5" />} />
         <StatCard
           label="Overdue"
           value={overdueMembers.length}
@@ -52,12 +67,9 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Attention Required */}
       {overdueMembers.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            ⚠ Needs Attention
-          </h2>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">⚠ Needs Attention</h2>
           <div className="space-y-2">
             {overdueMembers.slice(0, 3).map((m) => (
               <MemberCard key={m.id} member={m} />
@@ -66,12 +78,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent Activity */}
       {dueSoonMembers.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Due Soon
-          </h2>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Due Soon</h2>
           <div className="space-y-2">
             {dueSoonMembers.map((m) => (
               <MemberCard key={m.id} member={m} />
