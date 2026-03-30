@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { exportMembersCSV } from "@/lib/export";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ export default function MembersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [plan, setPlan] = useState("monthly");
 
   const filtered = members.filter(
     (m) =>
@@ -28,10 +30,11 @@ export default function MembersPage() {
       return;
     }
     try {
-      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim() });
+      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), membership_plan: plan });
       toast.success(`${name} added successfully`);
       setName("");
       setPhone("");
+      setPlan("monthly");
       setOpen(false);
     } catch {
       toast.error("Failed to add member");
@@ -64,6 +67,16 @@ export default function MembersPage() {
               <div className="space-y-3 pt-2">
                 <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
                 <Input placeholder="Phone Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <Select value={plan} onValueChange={setPlan}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Membership Plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="6months">6 Months</SelectItem>
+                    <SelectItem value="1year">1 Year</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button onClick={handleAdd} className="w-full" disabled={createMember.isPending}>
                   {createMember.isPending ? "Adding..." : "Add Member"}
                 </Button>

@@ -1,7 +1,10 @@
+export type MembershipPlan = "monthly" | "6months" | "1year";
+
 export interface Member {
   id: string;
   name: string;
   phone: string;
+  membership_plan: MembershipPlan;
   last_payment_date: string | null;
   created_at: string;
 }

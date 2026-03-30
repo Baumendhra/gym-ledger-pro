@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           id: string
           last_payment_date: string | null
+          membership_plan: string
           name: string
           phone: string
           user_id: string
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_payment_date?: string | null
+          membership_plan?: string
           name: string
           phone: string
           user_id: string
@@ -35,6 +37,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_payment_date?: string | null
+          membership_plan?: string
           name?: string
           phone?: string
           user_id?: string
