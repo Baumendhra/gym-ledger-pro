@@ -30,10 +30,11 @@ export default function MembersPage() {
       return;
     }
     try {
-      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim() });
+      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), membership_plan: plan });
       toast.success(`${name} added successfully`);
       setName("");
       setPhone("");
+      setPlan("monthly");
       setOpen(false);
     } catch {
       toast.error("Failed to add member");
