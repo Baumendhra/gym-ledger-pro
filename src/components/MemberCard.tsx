@@ -20,17 +20,22 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
   };
 
   return (
-    <><button
-      onClick={handleClick} /><div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-sm">
+    <button
+      onClick={handleClick}
+      className="w-full flex items-center gap-3 p-4 rounded-lg glass-card hover:shadow-md transition-all active:scale-[0.98] text-left animate-slide-up"
+    >
+      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-sm">
         {member.name.charAt(0).toUpperCase()}
-      </div><div className="flex-1 min-w-0">
+      </div>
+      <div className="flex-1 min-w-0">
         <p className="font-semibold truncate">{member.name}</p>
         <p className="text-xs text-muted-foreground">{member.batch} batch {member.membership_type ? `• ${member.membership_type}` : ''}</p>
         <p className="text-xs text-muted-foreground">Last paid: {formatDate(member.last_payment_date)}</p>
-      </div><div className="flex items-center gap-2">
+      </div>
+      <div className="flex items-center gap-2">
         <StatusBadge status={member.status} />
         <ChevronRight className="w-4 h-4 text-muted-foreground" />
-      </div></>
-    </button >
+      </div>
+    </button>
   );
 }
