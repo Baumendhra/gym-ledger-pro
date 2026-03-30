@@ -5,9 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { exportMembersCSV } from "@/lib/export";
-import type { Batch, MembershipType } from "@/types";
+import type { MembershipPlan } from "@/types";
 import { Search, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
+
+const PLAN_LABELS: { value: MembershipPlan; label: string; badge: string }[] = [
+  { value: "Monthly", label: "Monthly", badge: "1M" },
+  { value: "6 Months", label: "6 Months", badge: "6M" },
+  { value: "1 Year", label: "1 Year", badge: "1Y" },
+];
 
 export default function MembersPage() {
   const { data: members = [], isLoading } = useMembers();
@@ -16,8 +22,7 @@ export default function MembersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [batch, setBatch] = useState<Batch>("Morning");
-  const [membershipType, setMembershipType] = useState<MembershipType>("Regular");
+  const [membershipPlan, setMembershipPlan] = useState<MembershipPlan>("Monthly");
 
   const filtered = members.filter(
     (m) =>
@@ -31,20 +36,16 @@ export default function MembersPage() {
       return;
     }
     try {
-      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), batch, membership_type: membershipType });
+      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), membership_plan: membershipPlan });
       toast.success(`${name} added successfully`);
       setName("");
       setPhone("");
-      setBatch("Morning");
-      setMembershipType("Regular");
+      setMembershipPlan("Monthly");
       setOpen(false);
     } catch {
-      toast.error("Failed to add member");
+      toast.error("Failed to add member. Please check your connection and try again.");
     }
   };
-
-  const morningMembers = filtered.filter((m) => m.batch === "Morning");
-  const eveningMembers = filtered.filter((m) => m.batch === "Evening");
 
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto space-y-4">
@@ -70,40 +71,32 @@ export default function MembersPage() {
                 <DialogTitle>Add New Member</DialogTitle>
                 <DialogDescription className="sr-only">Enter the details of the new member below.</DialogDescription>
               </DialogHeader>
-              <div className="space-y-3 pt-2">
+              <div className="space-y-4 pt-2">
                 <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
                 <Input placeholder="Phone Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Batch</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["Morning", "Evening"] as Batch[]).map((option) => (
-                      <Button
-                        key={option}
-                        type="button"
-                        variant={batch === option ? "default" : "outline"}
-                        onClick={() => setBatch(option)}
-                      >
-                        {option}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Membership Type</p>
+                  <p className="text-sm font-medium">Membership Plan</p>
                   <div className="grid grid-cols-3 gap-2">
-                    {(["Regular", "Premium", "Sessions"] as MembershipType[]).map((option) => (
+                    {PLAN_LABELS.map(({ value, label }) => (
                       <Button
-                        key={option}
+                        key={value}
                         type="button"
-                        variant={membershipType === option ? "default" : "outline"}
-                        onClick={() => setMembershipType(option)}
-                        className="text-xs"
+                        variant={membershipPlan === value ? "default" : "outline"}
+                        onClick={() => setMembershipPlan(value)}
+                        className="text-sm flex flex-col h-auto py-2.5"
                       >
-                        {option}
+                        <span className="font-bold">{label}</span>
                       </Button>
                     ))}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {membershipPlan === "Monthly" && "Renews every 30 days"}
+                    {membershipPlan === "6 Months" && "Renews every 180 days"}
+                    {membershipPlan === "1 Year" && "Renews every 365 days"}
+                  </p>
                 </div>
+
                 <Button onClick={handleAdd} className="w-full" disabled={createMember.isPending}>
                   {createMember.isPending ? "Adding..." : "Add Member"}
                 </Button>
@@ -118,7 +111,7 @@ export default function MembersPage() {
         <Input placeholder="Search by name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
@@ -126,31 +119,7 @@ export default function MembersPage() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">No members found</p>
         ) : (
-          <>
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Morning Batch</h2>
-                <span className="text-xs text-muted-foreground">{morningMembers.length}</span>
-              </div>
-              {morningMembers.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No morning batch members</p>
-              ) : (
-                morningMembers.map((m) => <MemberCard key={m.id} member={m} />)
-              )}
-            </section>
-
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Evening Batch</h2>
-                <span className="text-xs text-muted-foreground">{eveningMembers.length}</span>
-              </div>
-              {eveningMembers.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No evening batch members</p>
-              ) : (
-                eveningMembers.map((m) => <MemberCard key={m.id} member={m} />)
-              )}
-            </section>
-          </>
+          filtered.map((m) => <MemberCard key={m.id} member={m} />)
         )}
       </div>
     </div>

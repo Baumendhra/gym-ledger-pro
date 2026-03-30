@@ -29,7 +29,9 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold truncate">{member.name}</p>
-        <p className="text-xs text-muted-foreground">{member.batch} batch {member.membership_type ? `• ${member.membership_type}` : ''}</p>
+        <p className="text-xs text-muted-foreground">
+          {member.membership_plan ?? "Monthly"} Plan
+        </p>
         <p className="text-xs text-muted-foreground">Last paid: {formatDate(member.last_payment_date)}</p>
       </div>
       <div className="flex items-center gap-2">

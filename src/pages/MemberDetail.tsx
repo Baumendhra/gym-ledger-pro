@@ -46,7 +46,7 @@ export default function MemberDetail() {
             <Phone className="w-3.5 h-3.5" />
             <span>{member.phone}</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{member.batch} batch {member.membership_type ? `• ${member.membership_type}` : ''}</p>
+          <p className="text-xs text-muted-foreground mt-1">{member.membership_plan ?? "Monthly"} Plan</p>
         </div>
       </div>
 

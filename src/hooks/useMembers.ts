@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getMemberStatus } from "@/lib/status";
 import { useAuth } from "@/hooks/useAuth";
-import type { Member, Payment } from "@/types";
+import type { Member, Payment, MembershipPlan } from "@/types";
 
 export function useMembers() {
   return useQuery({
@@ -21,22 +21,21 @@ export function useMembers() {
 export function useCreateMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name: string; phone: string; batch: "Morning" | "Evening"; membership_type?: string }) => {
+    mutationFn: async (data: { name: string; phone: string; membership_plan: MembershipPlan }) => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error("Authentication required to add members");
 
       const { data: member, error } = await supabase
         .from("members")
-        .insert({ 
-          name: data.name, 
-          phone: data.phone, 
-          batch: data.batch, 
-          membership_type: data.membership_type || "Regular",
-          user_id: user.id 
+        .insert({
+          name: data.name,
+          phone: data.phone,
+          membership_plan: data.membership_plan,
+          user_id: user.id,
         })
         .select()
         .single();
-        
+
       if (error) {
         console.error("Supabase insert error:", error);
         throw error;

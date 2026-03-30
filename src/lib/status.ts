@@ -1,4 +1,5 @@
-import type { Member, MemberStatus, MemberWithStatus } from "@/types";
+import type { Member, MemberStatus, MemberWithStatus, PLAN_DURATION_DAYS } from "@/types";
+import { PLAN_DURATION_DAYS as planDays } from "@/types";
 
 export function getMemberStatus(member: Member): MemberWithStatus {
   if (!member.last_payment_date) {
@@ -7,18 +8,22 @@ export function getMemberStatus(member: Member): MemberWithStatus {
 
   const lastPayment = new Date(member.last_payment_date);
   const dueDate = new Date(lastPayment);
-  dueDate.setDate(dueDate.getDate() + 30);
-  
+
+  // Get duration based on membership plan
+  const plan = member.membership_plan ?? "Monthly";
+  const durationDays = planDays[plan] ?? 30;
+  dueDate.setDate(dueDate.getDate() + durationDays);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const diffMs = dueDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
   let status: MemberStatus;
   if (diffDays < 0) {
     status = "overdue";
-  } else if (diffDays <= 3) {
+  } else if (diffDays <= 7) {
     status = "due";
   } else {
     status = "paid";

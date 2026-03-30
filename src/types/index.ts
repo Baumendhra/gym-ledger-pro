@@ -2,14 +2,21 @@ export interface Member {
   id: string;
   name: string;
   phone: string;
-  batch: Batch;
+  membership_plan: MembershipPlan;
   membership_type?: MembershipType;
   last_payment_date: string | null;
   created_at: string;
 }
 
-export type Batch = "Morning" | "Evening";
-export type MembershipType = "Regular" | "Premium" | "Sessions";
+export type MembershipPlan = "Monthly" | "6 Months" | "1 Year";
+export type MembershipType = "Monthly" | "6 Months" | "1 Year";
+
+// Duration in days for each plan
+export const PLAN_DURATION_DAYS: Record<MembershipPlan, number> = {
+  "Monthly": 30,
+  "6 Months": 180,
+  "1 Year": 365,
+};
 
 export type PaymentMode = "UPI" | "Cash";
 
