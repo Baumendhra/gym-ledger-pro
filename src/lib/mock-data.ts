@@ -39,6 +39,7 @@ export const mockApi = {
       id: String(Date.now()),
       name: data.name,
       phone: data.phone,
+      membership_plan: "monthly",
       last_payment_date: null,
       created_at: new Date().toISOString(),
     };

@@ -16,6 +16,7 @@ export default function MembersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [plan, setPlan] = useState("monthly");
 
   const filtered = members.filter(
     (m) =>
