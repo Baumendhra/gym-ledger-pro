@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "netlify-cli": "^21.6.0"
+  }
+}
