@@ -22,10 +22,10 @@ export function useCreateMember() {
   const qc = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async (data: { name: string; phone: string }) => {
+    mutationFn: async (data: { name: string; phone: string; membership_plan?: string }) => {
       const { data: member, error } = await supabase
         .from("members")
-        .insert({ name: data.name, phone: data.phone, user_id: user?.id })
+        .insert({ name: data.name, phone: data.phone, membership_plan: data.membership_plan || "monthly", user_id: user?.id })
         .select()
         .single();
       if (error) throw error;
