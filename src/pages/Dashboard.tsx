@@ -51,19 +51,21 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Total Members" value={members.length} icon={<Users className="w-5 h-5" />} />
-        <StatCard label="Paid" value={paidMembers.length} icon={<IndianRupee className="w-5 h-5" />} />
+        <StatCard label="Total Members" value={members.length} icon={<Users className="w-5 h-5" />} to="/members" />
+        <StatCard label="Paid" value={paidMembers.length} icon={<IndianRupee className="w-5 h-5" />} to="/members" />
         <StatCard
           label="Overdue"
           value={overdueMembers.length}
           icon={<AlertTriangle className="w-5 h-5" />}
           className={overdueMembers.length > 0 ? "border-status-overdue/30" : ""}
+          to="/pending"
         />
         <StatCard
           label="Due Soon"
           value={dueSoonMembers.length}
           icon={<Clock className="w-5 h-5" />}
           className={dueSoonMembers.length > 0 ? "border-status-due/30" : ""}
+          to="/pending"
         />
       </div>
 

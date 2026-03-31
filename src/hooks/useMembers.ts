@@ -55,7 +55,7 @@ export function usePayments(memberId: string) {
 export function useCreatePayment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { member_id: string; amount: number; mode: string; note?: string }) => {
+    mutationFn: async (data: { member_id: string; amount: number; mode: string; note?: string; membership_plan?: MembershipPlan }) => {
       const { data: payment, error } = await supabase
         .from("payments")
         .insert({
@@ -68,11 +68,22 @@ export function useCreatePayment() {
         .single();
       if (error) throw error;
 
+      const now = new Date();
+      const plan = data.membership_plan || "monthly";
+      const durationDays = PLAN_DURATION_DAYS[plan];
+      const nextDue = new Date(now);
+      nextDue.setDate(nextDue.getDate() + durationDays);
+
       const { error: updateError } = await supabase
         .from("members")
-        .update({ last_payment_date: new Date().toISOString() })
+        .update({
+          last_payment_date: now.toISOString(),
+          next_due_date: nextDue.toISOString(),
+        })
         .eq("id", data.member_id);
       if (updateError) throw updateError;
+
+      return payment;
 
       return payment;
     },
