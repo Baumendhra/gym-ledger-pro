@@ -21,6 +21,7 @@ export type Database = {
           last_payment_date: string | null
           membership_plan: string
           name: string
+          next_due_date: string | null
           phone: string
           user_id: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           last_payment_date?: string | null
           membership_plan?: string
           name: string
+          next_due_date?: string | null
           phone: string
           user_id: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           last_payment_date?: string | null
           membership_plan?: string
           name?: string
+          next_due_date?: string | null
           phone?: string
           user_id?: string
         }
