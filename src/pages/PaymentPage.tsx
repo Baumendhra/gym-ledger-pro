@@ -40,6 +40,7 @@ export default function PaymentPage() {
         amount,
         mode,
         note: `${selected.name} - ${new Date().toLocaleDateString("en-IN", { month: "long" })}`,
+        membership_plan: selected.membership_plan,
       });
       setConfirmed(true);
       toast.success(`${formatCurrency(amount)} received from ${selected.name}`);
