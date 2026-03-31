@@ -1,9 +1,10 @@
-import type { Member, MemberWithStatus, PaymentStatus, ActivityStatus, PLAN_CONFIG } from "@/types";
+import type { Member, MemberWithStatus, PaymentStatus, ActivityStatus, PackageType, MembershipPlan } from "@/types";
 import { PLAN_CONFIG as planConfig } from "@/types";
 
 export function getMemberStatus(member: Member): MemberWithStatus {
-  const plan = member.membership_plan || "monthly";
-  const durationDays = planConfig[plan]?.durationDays || 30;
+  const pkg = (member.package_type as PackageType) || "strengthening";
+  const plan = (member.membership_plan as MembershipPlan) || "1_month";
+  const durationDays = planConfig[pkg]?.[plan]?.durationDays || 30;
 
   let dueDate: Date | null = null;
   if (member.next_due_date) {

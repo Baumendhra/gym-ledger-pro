@@ -7,6 +7,7 @@ import { exportPaymentsCSV } from "@/lib/export";
 import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { PLAN_CONFIG } from "@/types";
 
 export default function MemberDetail() {
   const { id } = useParams<{ id: string }>();
@@ -63,7 +64,9 @@ export default function MemberDetail() {
             <Phone className="w-3.5 h-3.5" />
             <span>{member.phone}</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{member.membership_plan ?? "Monthly"} Plan</p>
+          <p className="text-xs text-muted-foreground mt-1 capitalize">
+            {member.package_type || "Strengthening"} • {PLAN_CONFIG[(member.package_type as "strengthening" | "cardio") || "strengthening"]?.[(member.membership_plan as "1_month"| "3_months"| "6_months" | "1_year") || "1_month"]?.label || member.membership_plan}
+          </p>
         </div>
       </div>
 

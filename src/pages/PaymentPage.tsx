@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Search, CheckCircle2, Banknote, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { type MemberWithStatus, PLAN_CONFIG } from "@/types";
+import { type MemberWithStatus, PLAN_CONFIG, type PackageType, type MembershipPlan } from "@/types";
 import { useSearchParams } from "react-router-dom";
 
 const QUICK_AMOUNTS = [500, 1000, 1500, 2000];
@@ -42,8 +42,9 @@ export default function PaymentPage() {
 
   useEffect(() => {
     if (selected) {
-      const plan = selected.membership_plan || "monthly";
-      setAmount(PLAN_CONFIG[plan]?.fee || 700);
+      const pkg = (selected.package_type as PackageType) || "strengthening";
+      const plan = (selected.membership_plan as MembershipPlan) || "1_month";
+      setAmount(PLAN_CONFIG[pkg]?.[plan]?.fee || 699);
     }
   }, [selected]);
 

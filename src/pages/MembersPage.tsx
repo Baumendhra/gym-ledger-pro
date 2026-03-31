@@ -5,14 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { exportMembersCSV } from "@/lib/export";
-import { type MembershipPlan, PLAN_CONFIG } from "@/types";
+import { type MembershipPlan, type PackageType, PLAN_CONFIG } from "@/types";
 import { Search, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
-
-const PLAN_LABELS = Object.entries(PLAN_CONFIG).map(([value, config]) => ({
-  value: value as MembershipPlan,
-  label: config.label,
-}));
 
 export default function MembersPage() {
   const { data: members = [], isLoading } = useMembers();
@@ -21,8 +16,9 @@ export default function MembersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [membershipPlan, setMembershipPlan] = useState<MembershipPlan>("monthly");
-  const [filter, setFilter] = useState<"All" | "Active" | "Inactive" | "Due" | "Overdue">("All");
+  const [packageType, setPackageType] = useState<PackageType>("strengthening");
+  const [membershipPlan, setMembershipPlan] = useState<MembershipPlan>("1_month");
+  const [filter, setFilter] = useState<"All" | "Active" | "Inactive" | "Due" | "Overdue" | "Strengthening" | "Cardio">("All");
 
   const filtered = members
     .filter((m) => {
@@ -34,6 +30,8 @@ export default function MembersPage() {
       if (filter === "Inactive") return m.activityStatus === "inactive";
       if (filter === "Due") return m.paymentStatus === "due";
       if (filter === "Overdue") return m.paymentStatus === "overdue";
+      if (filter === "Strengthening") return m.package_type === "strengthening";
+      if (filter === "Cardio") return m.package_type === "cardio";
       return true;
     })
     .sort((a, b) => {
@@ -57,11 +55,12 @@ export default function MembersPage() {
       return;
     }
     try {
-      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), membership_plan: membershipPlan });
+      await createMember.mutateAsync({ name: name.trim(), phone: phone.trim(), package_type: packageType, membership_plan: membershipPlan });
       toast.success(`${name} added successfully`);
       setName("");
       setPhone("");
-      setMembershipPlan("monthly");
+      setPackageType("strengthening");
+      setMembershipPlan("1_month");
       setOpen(false);
     } catch {
       toast.error("Failed to add member. Please check your connection and try again.");
@@ -96,24 +95,49 @@ export default function MembersPage() {
                 <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
                 <Input placeholder="Phone Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Membership Plan</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PLAN_LABELS.map(({ value, label }) => (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Package</p>
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
-                        key={value}
                         type="button"
-                        variant={membershipPlan === value ? "default" : "outline"}
-                        onClick={() => setMembershipPlan(value)}
-                        className="text-sm flex flex-col h-auto py-2.5"
+                        variant={packageType === "strengthening" ? "default" : "outline"}
+                        onClick={() => setPackageType("strengthening")}
+                        className="text-sm"
                       >
-                        <span className="font-bold">{label}</span>
+                        Strengthening
                       </Button>
-                    ))}
+                      <Button
+                        type="button"
+                        variant={packageType === "cardio" ? "default" : "outline"}
+                        onClick={() => setPackageType("cardio")}
+                        className="text-sm"
+                      >
+                        Cardio
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Renews every {PLAN_CONFIG[membershipPlan]?.durationDays || 30} days
-                  </p>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Membership Plan</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(PLAN_CONFIG[packageType] || PLAN_CONFIG.strengthening).map(([value, config]) => (
+                        <Button
+                          key={value}
+                          type="button"
+                          variant={membershipPlan === value ? "default" : "outline"}
+                          onClick={() => setMembershipPlan(value as MembershipPlan)}
+                          className="text-sm flex flex-col h-auto py-2.5"
+                        >
+                          <span className="font-bold">{config.label}</span>
+                          <span className="text-xs opacity-80 mt-1">₹{config.fee}</span>
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Renews every {PLAN_CONFIG[packageType]?.[membershipPlan]?.durationDays || 30} days
+                    </p>
+                  </div>
                 </div>
 
                 <Button onClick={handleAdd} className="w-full" disabled={createMember.isPending}>
@@ -131,7 +155,7 @@ export default function MembersPage() {
       </div>
 
       <div className="flex gap-2 text-sm overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-        {["All", "Active", "Inactive", "Due", "Overdue"].map((f) => (
+        {["All", "Active", "Inactive", "Due", "Overdue", "Strengthening", "Cardio"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f as any)}

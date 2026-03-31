@@ -22,7 +22,7 @@ export function useMembers() {
 export function useCreateMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name: string; phone: string; membership_plan: MembershipPlan }) => {
+    mutationFn: async (data: { name: string; phone: string; package_type: string; membership_plan: string }) => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error("Authentication required to add members");
 
@@ -31,6 +31,7 @@ export function useCreateMember() {
         .insert({
           name: data.name,
           phone: data.phone,
+          package_type: data.package_type,
           membership_plan: data.membership_plan,
           user_id: user.id,
         })
@@ -82,21 +83,23 @@ export function useCreatePayment() {
       // Fetch member's plan
       const { data: memberData } = await supabase
         .from("members")
-        .select("membership_plan")
+        .select("package_type, membership_plan")
         .eq("id", data.member_id)
         .single();
 
-      const plan = (memberData?.membership_plan as MembershipPlan) || "monthly";
-      const durationDays = PLAN_CONFIG[plan]?.durationDays || 30;
+      const pkg = (memberData?.package_type as PackageType) || "strengthening";
+      const plan = (memberData?.membership_plan as MembershipPlan) || "1_month";
+      const durationDays = PLAN_CONFIG[pkg]?.[plan]?.durationDays || 30;
 
       const lastPaymentDate = new Date();
+      const nextDueDate = new Date(lastPaymentDate);
+      nextDueDate.setDate(nextDueDate.getDate() + durationDays);
 
-      // Only update last_payment_date — next_due_date column may not exist in DB yet.
-      // The status.ts fallback derives due date from last_payment_date + plan duration.
       const { error: updateError } = await supabase
         .from("members")
         .update({ 
           last_payment_date: lastPaymentDate.toISOString(),
+          next_due_date: nextDueDate.toISOString(),
         })
         .eq("id", data.member_id);
       if (updateError) throw updateError;
