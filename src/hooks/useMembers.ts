@@ -90,14 +90,13 @@ export function useCreatePayment() {
       const durationDays = PLAN_CONFIG[plan]?.durationDays || 30;
 
       const lastPaymentDate = new Date();
-      const nextDueDate = new Date(lastPaymentDate);
-      nextDueDate.setDate(nextDueDate.getDate() + durationDays);
 
+      // Only update last_payment_date — next_due_date column may not exist in DB yet.
+      // The status.ts fallback derives due date from last_payment_date + plan duration.
       const { error: updateError } = await supabase
         .from("members")
         .update({ 
           last_payment_date: lastPaymentDate.toISOString(),
-          next_due_date: nextDueDate.toISOString()
         })
         .eq("id", data.member_id);
       if (updateError) throw updateError;
