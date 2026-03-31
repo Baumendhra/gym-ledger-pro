@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getMemberStatus } from "@/lib/status";
 import { useAuth } from "@/hooks/useAuth";
-import type { Member, Payment } from "@/types";
+import type { Member, Payment, MembershipPlan } from "@/types";
+import { PLAN_DURATION_DAYS } from "@/types";
 
 export function useMembers() {
   return useQuery({
