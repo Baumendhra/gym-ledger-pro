@@ -92,3 +92,28 @@ export function useCreatePayment() {
     },
   });
 }
+
+export function useDeleteMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (memberId: string) => {
+      // Delete all related payment records first to avoid orphan rows
+      const { error: paymentsError } = await supabase
+        .from("payments")
+        .delete()
+        .eq("member_id", memberId);
+      if (paymentsError) throw paymentsError;
+
+      // Now delete the member
+      const { error: memberError } = await supabase
+        .from("members")
+        .delete()
+        .eq("id", memberId);
+      if (memberError) throw memberError;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["members"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+    },
+  });
+}
