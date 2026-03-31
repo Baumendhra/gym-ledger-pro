@@ -18,12 +18,14 @@ export default function PendingPage() {
     });
 
   const handleQuickPay = async (memberId: string, name: string) => {
+    const member = pending.find((m) => m.id === memberId);
     try {
       await createPayment.mutateAsync({
         member_id: memberId,
         amount: 1000,
         mode: "Cash",
         note: `${name} - ${new Date().toLocaleDateString("en-IN", { month: "long" })}`,
+        membership_plan: member?.membership_plan,
       });
       toast.success(`${formatCurrency(1000)} received from ${name}`);
     } catch {
