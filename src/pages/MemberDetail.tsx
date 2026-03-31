@@ -57,7 +57,7 @@ export default function MemberDetail() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-lg font-bold truncate">{member.name}</h1>
-            <StatusBadge status={member.status} />
+            <StatusBadge paymentStatus={member.paymentStatus} activityStatus={member.activityStatus} />
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Phone className="w-3.5 h-3.5" />

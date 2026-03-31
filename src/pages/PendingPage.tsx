@@ -4,28 +4,31 @@ import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency } from "@/lib/status";
 import { MessageCircle, IndianRupee } from "lucide-react";
 import { toast } from "sonner";
+import { PLAN_CONFIG } from "@/types";
 
 export default function PendingPage() {
   const { data: members = [] } = useMembers();
   const createPayment = useCreatePayment();
 
   const pending = members
-    .filter((m) => m.status === "overdue" || m.status === "due")
+    .filter((m) => m.paymentStatus === "overdue" || m.paymentStatus === "due")
     .sort((a, b) => {
-      if (a.status === "overdue" && b.status !== "overdue") return -1;
-      if (a.status !== "overdue" && b.status === "overdue") return 1;
+      if (a.paymentStatus === "overdue" && b.paymentStatus !== "overdue") return -1;
+      if (a.paymentStatus !== "overdue" && b.paymentStatus === "overdue") return 1;
       return b.overdueDays - a.overdueDays;
     });
 
-  const handleQuickPay = async (memberId: string, name: string) => {
+  const handleQuickPay = async (member: typeof members[0]) => {
     try {
+      const plan = member.membership_plan || "monthly";
+      const fee = PLAN_CONFIG[plan]?.fee || 700;
       await createPayment.mutateAsync({
-        member_id: memberId,
-        amount: 1000,
+        member_id: member.id,
+        amount: fee,
         mode: "Cash",
-        note: `${name} - ${new Date().toLocaleDateString("en-IN", { month: "long" })}`,
+        note: `${member.name} - ${new Date().toLocaleDateString("en-IN", { month: "long" })}`,
       });
-      toast.success(`${formatCurrency(1000)} received from ${name}`);
+      toast.success(`${formatCurrency(fee)} received from ${member.name}`);
     } catch {
       toast.error("Payment failed");
     }
@@ -66,7 +69,7 @@ export default function PendingPage() {
                     </p>
                   </div>
                 </div>
-                <StatusBadge status={m.status} />
+                <StatusBadge paymentStatus={m.paymentStatus} activityStatus={m.activityStatus} />
               </div>
 
               {m.overdueDays > 0 && (
@@ -79,7 +82,7 @@ export default function PendingPage() {
                 <Button
                   size="sm"
                   className="flex-1 gap-1.5"
-                  onClick={() => handleQuickPay(m.id, m.name)}
+                  onClick={() => handleQuickPay(m)}
                 >
                   <IndianRupee className="w-3.5 h-3.5" /> Mark Paid
                 </Button>

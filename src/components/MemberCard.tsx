@@ -35,7 +35,7 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
         <p className="text-xs text-muted-foreground">Last paid: {formatDate(member.last_payment_date)}</p>
       </div>
       <div className="flex items-center gap-2">
-        <StatusBadge status={member.status} />
+        <StatusBadge paymentStatus={member.paymentStatus} activityStatus={member.activityStatus} />
         <ChevronRight className="w-4 h-4 text-muted-foreground" />
       </div>
     </button>

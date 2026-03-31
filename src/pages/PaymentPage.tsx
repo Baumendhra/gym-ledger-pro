@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Search, CheckCircle2, Banknote, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import type { MemberWithStatus } from "@/types";
+import { type MemberWithStatus, PLAN_CONFIG } from "@/types";
 import { useSearchParams } from "react-router-dom";
 
 const QUICK_AMOUNTS = [500, 1000, 1500, 2000];
@@ -39,6 +39,13 @@ export default function PaymentPage() {
       setSearch(memberFromQuery.name);
     }
   }, [memberIdFromQuery, members]);
+
+  useEffect(() => {
+    if (selected) {
+      const plan = selected.membership_plan || "monthly";
+      setAmount(PLAN_CONFIG[plan]?.fee || 700);
+    }
+  }, [selected]);
 
   const UPI_ID = "dharshansmd-1@oksbi";
   const UPI_NAME = "Dharshan S.M";
@@ -137,15 +144,23 @@ export default function PaymentPage() {
               </Button>
             </div>
 
-            {/* Quick amounts */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">Amount</p>
+            {/* Amount Configuration */}
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Amount to Pay</p>
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(Number(e.target.value) || 0)}
+                  className="h-12 text-lg font-semibold"
+                />
+              </div>
               <div className="grid grid-cols-4 gap-2">
                 {QUICK_AMOUNTS.map((a) => (
                   <button
                     key={a}
                     onClick={() => setAmount(a)}
-                    className={`py-3 rounded-lg text-sm font-semibold transition-all active:scale-95 ${
+                    className={`py-2 rounded-lg text-sm font-semibold transition-all active:scale-95 ${
                       amount === a
                         ? "bg-primary text-primary-foreground shadow-md"
                         : "glass-card hover:shadow-sm"

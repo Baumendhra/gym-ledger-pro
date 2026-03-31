@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getMemberStatus } from "@/lib/status";
 import { useAuth } from "@/hooks/useAuth";
-import type { Member, Payment, MembershipPlan } from "@/types";
+import { type Member, type Payment, type MembershipPlan, PLAN_CONFIG } from "@/types";
+
 
 export function useMembers() {
   return useQuery({
@@ -78,9 +79,26 @@ export function useCreatePayment() {
         .single();
       if (error) throw error;
 
+      // Fetch member's plan
+      const { data: memberData } = await supabase
+        .from("members")
+        .select("membership_plan")
+        .eq("id", data.member_id)
+        .single();
+
+      const plan = (memberData?.membership_plan as MembershipPlan) || "monthly";
+      const durationDays = PLAN_CONFIG[plan]?.durationDays || 30;
+
+      const lastPaymentDate = new Date();
+      const nextDueDate = new Date(lastPaymentDate);
+      nextDueDate.setDate(nextDueDate.getDate() + durationDays);
+
       const { error: updateError } = await supabase
         .from("members")
-        .update({ last_payment_date: new Date().toISOString() })
+        .update({ 
+          last_payment_date: lastPaymentDate.toISOString(),
+          next_due_date: nextDueDate.toISOString()
+        })
         .eq("id", data.member_id);
       if (updateError) throw updateError;
 

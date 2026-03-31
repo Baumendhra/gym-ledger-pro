@@ -18,8 +18,8 @@ export function exportMembersCSV(members: MemberWithStatus[]) {
     [
       `"${m.name}"`,
       m.phone,
-      m.membership_plan ?? "Monthly",
-      m.status,
+      m.membership_plan ?? "monthly",
+      `${m.activityStatus} / ${m.paymentStatus}`,
       formatDate(m.last_payment_date),
       m.dueDate ? formatDate(m.dueDate) : "N/A",
       m.overdueDays,

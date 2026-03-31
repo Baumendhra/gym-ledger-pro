@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { exportMembersCSV } from "@/lib/export";
-import type { MembershipPlan } from "@/types";
+import { type MembershipPlan, PLAN_CONFIG } from "@/types";
 import { Search, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
 
-const PLAN_LABELS: { value: MembershipPlan; label: string; badge: string }[] = [
-  { value: "Monthly", label: "Monthly", badge: "1M" },
-  { value: "6 Months", label: "6 Months", badge: "6M" },
-  { value: "1 Year", label: "1 Year", badge: "1Y" },
-];
+const PLAN_LABELS = Object.entries(PLAN_CONFIG).map(([value, config]) => ({
+  value: value as MembershipPlan,
+  label: config.label,
+}));
 
 export default function MembersPage() {
   const { data: members = [], isLoading } = useMembers();
@@ -22,13 +21,35 @@ export default function MembersPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [membershipPlan, setMembershipPlan] = useState<MembershipPlan>("Monthly");
+  const [membershipPlan, setMembershipPlan] = useState<MembershipPlan>("monthly");
+  const [filter, setFilter] = useState<"All" | "Active" | "Inactive" | "Due" | "Overdue">("All");
 
-  const filtered = members.filter(
-    (m) =>
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
-      m.phone.includes(search)
-  );
+  const filtered = members
+    .filter((m) => {
+      const matchesSearch =
+        m.name.toLowerCase().includes(search.toLowerCase()) || m.phone.includes(search);
+      if (!matchesSearch) return false;
+
+      if (filter === "Active") return m.activityStatus === "active";
+      if (filter === "Inactive") return m.activityStatus === "inactive";
+      if (filter === "Due") return m.paymentStatus === "due";
+      if (filter === "Overdue") return m.paymentStatus === "overdue";
+      return true;
+    })
+    .sort((a, b) => {
+      const getPriority = (m: typeof members[0]) => {
+        if (m.paymentStatus === "overdue") return 0;
+        if (m.paymentStatus === "due") return 1;
+        if (m.activityStatus === "inactive") return 2;
+        return 3;
+      };
+
+      const priorityA = getPriority(a);
+      const priorityB = getPriority(b);
+
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      return b.overdueDays - a.overdueDays;
+    });
 
   const handleAdd = async () => {
     if (!name.trim() || !phone.trim()) {
@@ -40,7 +61,7 @@ export default function MembersPage() {
       toast.success(`${name} added successfully`);
       setName("");
       setPhone("");
-      setMembershipPlan("Monthly");
+      setMembershipPlan("monthly");
       setOpen(false);
     } catch {
       toast.error("Failed to add member. Please check your connection and try again.");
@@ -77,7 +98,7 @@ export default function MembersPage() {
 
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Membership Plan</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {PLAN_LABELS.map(({ value, label }) => (
                       <Button
                         key={value}
@@ -91,9 +112,7 @@ export default function MembersPage() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {membershipPlan === "Monthly" && "Renews every 30 days"}
-                    {membershipPlan === "6 Months" && "Renews every 180 days"}
-                    {membershipPlan === "1 Year" && "Renews every 365 days"}
+                    Renews every {PLAN_CONFIG[membershipPlan]?.durationDays || 30} days
                   </p>
                 </div>
 
@@ -109,6 +128,22 @@ export default function MembersPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input placeholder="Search by name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
+
+      <div className="flex gap-2 text-sm overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+        {["All", "Active", "Inactive", "Due", "Overdue"].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f as any)}
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full font-medium transition-all ${
+              filter === f
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-secondary/50 text-primary hover:bg-secondary"
+            }`}
+          >
+            {f}
+          </button>
+        ))}
       </div>
 
       <div className="space-y-2">
