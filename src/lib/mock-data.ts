@@ -1,4 +1,5 @@
 import type { Member, Payment } from "@/types";
+import { PLAN_DURATION_DAYS } from "@/types";
 
 // Mock data for demo / when backend is unavailable
 const today = new Date();
@@ -9,15 +10,22 @@ function daysAgo(n: number): string {
   return d.toISOString();
 }
 
+function dueAfter(lastPaid: string | null, plan: keyof typeof PLAN_DURATION_DAYS): string | null {
+  if (!lastPaid) return null;
+  const d = new Date(lastPaid);
+  d.setDate(d.getDate() + PLAN_DURATION_DAYS[plan]);
+  return d.toISOString();
+}
+
 export const mockMembers: Member[] = [
-  { id: "1", name: "Ravi Kumar", phone: "9876543210", membership_plan: "monthly", last_payment_date: daysAgo(5), created_at: daysAgo(90) },
-  { id: "2", name: "Amit Sharma", phone: "9876543211", membership_plan: "monthly", last_payment_date: daysAgo(28), created_at: daysAgo(120) },
-  { id: "3", name: "Priya Singh", phone: "9876543212", membership_plan: "6months", last_payment_date: daysAgo(35), created_at: daysAgo(60) },
-  { id: "4", name: "Suresh Patel", phone: "9876543213", membership_plan: "1year", last_payment_date: daysAgo(15), created_at: daysAgo(200) },
-  { id: "5", name: "Neha Gupta", phone: "9876543214", membership_plan: "monthly", last_payment_date: daysAgo(45), created_at: daysAgo(150) },
-  { id: "6", name: "Vikram Yadav", phone: "9876543215", membership_plan: "monthly", last_payment_date: daysAgo(2), created_at: daysAgo(30) },
-  { id: "7", name: "Anjali Verma", phone: "9876543216", membership_plan: "monthly", last_payment_date: null, created_at: daysAgo(10) },
-  { id: "8", name: "Deepak Joshi", phone: "9876543217", membership_plan: "6months", last_payment_date: daysAgo(29), created_at: daysAgo(180) },
+  { id: "1", name: "Ravi Kumar", phone: "9876543210", membership_plan: "monthly", last_payment_date: daysAgo(5), next_due_date: dueAfter(daysAgo(5), "monthly"), created_at: daysAgo(90) },
+  { id: "2", name: "Amit Sharma", phone: "9876543211", membership_plan: "monthly", last_payment_date: daysAgo(28), next_due_date: dueAfter(daysAgo(28), "monthly"), created_at: daysAgo(120) },
+  { id: "3", name: "Priya Singh", phone: "9876543212", membership_plan: "6months", last_payment_date: daysAgo(35), next_due_date: dueAfter(daysAgo(35), "6months"), created_at: daysAgo(60) },
+  { id: "4", name: "Suresh Patel", phone: "9876543213", membership_plan: "1year", last_payment_date: daysAgo(15), next_due_date: dueAfter(daysAgo(15), "1year"), created_at: daysAgo(200) },
+  { id: "5", name: "Neha Gupta", phone: "9876543214", membership_plan: "monthly", last_payment_date: daysAgo(45), next_due_date: dueAfter(daysAgo(45), "monthly"), created_at: daysAgo(150) },
+  { id: "6", name: "Vikram Yadav", phone: "9876543215", membership_plan: "monthly", last_payment_date: daysAgo(2), next_due_date: dueAfter(daysAgo(2), "monthly"), created_at: daysAgo(30) },
+  { id: "7", name: "Anjali Verma", phone: "9876543216", membership_plan: "monthly", last_payment_date: null, next_due_date: null, created_at: daysAgo(10) },
+  { id: "8", name: "Deepak Joshi", phone: "9876543217", membership_plan: "6months", last_payment_date: daysAgo(29), next_due_date: dueAfter(daysAgo(29), "6months"), created_at: daysAgo(180) },
 ];
 
 export const mockPayments: Payment[] = [
@@ -41,6 +49,7 @@ export const mockApi = {
       phone: data.phone,
       membership_plan: "monthly",
       last_payment_date: null,
+      next_due_date: null,
       created_at: new Date().toISOString(),
     };
     members = [m, ...members];
@@ -58,8 +67,13 @@ export const mockApi = {
       note: data.note || "",
     };
     payments = [p, ...payments];
+    const now = new Date();
     members = members.map((m) =>
-      m.id === data.member_id ? { ...m, last_payment_date: new Date().toISOString() } : m
+      m.id === data.member_id ? {
+        ...m,
+        last_payment_date: now.toISOString(),
+        next_due_date: new Date(now.getTime() + PLAN_DURATION_DAYS[m.membership_plan] * 86400000).toISOString(),
+      } : m
     );
     return p;
   },
