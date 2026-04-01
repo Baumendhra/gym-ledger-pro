@@ -10,6 +10,7 @@ import MembersPage from "@/pages/MembersPage";
 import PaymentPage from "@/pages/PaymentPage";
 import PendingPage from "@/pages/PendingPage";
 import MemberDetail from "@/pages/MemberDetail";
+import AnalyticsPage from "@/pages/AnalyticsPage";
 import AuthPage from "@/pages/AuthPage";
 import NotFound from "@/pages/NotFound";
 
@@ -36,6 +37,7 @@ function ProtectedRoutes() {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/pending" element={<PendingPage />} />
         <Route path="/member/:id" element={<MemberDetail />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
