@@ -63,7 +63,9 @@ export function useCreatePayment() {
           amount: data.amount,
           mode: data.mode,
           note: data.note || "",
-        })
+          membership_plan: data.membership_plan || "monthly",
+          package_type: (data as any).package_type || "strengthening",
+        } as any)
         .select()
         .single();
       if (error) throw error;
