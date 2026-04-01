@@ -56,24 +56,30 @@ export type Database = {
           date: string
           id: string
           member_id: string
+          membership_plan: string | null
           mode: string
           note: string | null
+          package_type: string | null
         }
         Insert: {
           amount: number
           date?: string
           id?: string
           member_id: string
+          membership_plan?: string | null
           mode: string
           note?: string | null
+          package_type?: string | null
         }
         Update: {
           amount?: number
           date?: string
           id?: string
           member_id?: string
+          membership_plan?: string | null
           mode?: string
           note?: string | null
+          package_type?: string | null
         }
         Relationships: [
           {
