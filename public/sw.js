@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymkhata-pro-v2'; // Incremented to v2 to bust the old faulty cache
+const CACHE_NAME = 'gymkhata-pro-v3'; // Incremented to v3 to bust the old faulty cache
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -36,9 +36,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Prevent TypeError: Failed to fetch for only-if-cached requests
+  if (event.request.cache === 'only-if-cached' && event.request.mode !== 'same-origin') {
+    return;
+  }
+
+  // Ignore non-HTTP requests (like chrome-extension://)
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   // Use Network First for navigation requests (HTML)
   // This ensures users always get the latest version of the app from the server
-  if (event.request.mode === 'navigate') {
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
@@ -84,9 +94,9 @@ self.addEventListener('fetch', (event) => {
         .catch((error) => {
           console.error('Fetch error in Service Worker:', error);
           // Return a 408 response to avoid "Failed to convert value to 'Response'" TypeError
-          return new Response('Network error occurred', {
+          return new Response(JSON.stringify({ error: 'Network error occurred' }), {
             status: 408,
-            headers: { 'Content-Type': 'text/plain' },
+            headers: { 'Content-Type': 'application/json' },
           });
         });
     })
