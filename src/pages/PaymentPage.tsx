@@ -23,6 +23,12 @@ export default function PaymentPage() {
   const [confirmed, setConfirmed] = useState(false);
   const memberIdFromQuery = searchParams.get("memberId");
 
+  const todayStr = useMemo(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  }, []);
+  const [paymentDate, setPaymentDate] = useState(todayStr);
+
   const filtered = search
     ? members.filter(
         (m) =>
@@ -62,11 +68,18 @@ export default function PaymentPage() {
   const handleConfirm = async () => {
     if (!selected) return;
     try {
+      let finalDate = new Date();
+      if (paymentDate && paymentDate !== todayStr) {
+        finalDate = new Date(paymentDate);
+        finalDate.setHours(12, 0, 0, 0); // Noon to avoid timezone offset issues
+      }
+
       await createPayment.mutateAsync({
         member_id: selected.id,
         amount,
         mode,
-        note: `${selected.name} - ${new Date().toLocaleDateString("en-IN", { month: "long" })}`,
+        note: `${selected.name} - ${finalDate.toLocaleDateString("en-IN", { month: "long" })}`,
+        date: finalDate.toISOString(),
       });
       setConfirmed(true);
       toast.success(`${formatCurrency(amount)} received from ${selected.name}`);
@@ -74,6 +87,8 @@ export default function PaymentPage() {
         setSelected(null);
         setConfirmed(false);
         setSearch("");
+        setAmount(1000);
+        setPaymentDate(todayStr);
       }, 2000);
     } catch {
       toast.error("Payment failed");
@@ -170,6 +185,28 @@ export default function PaymentPage() {
                     {formatCurrency(a)}
                   </button>
                 ))}
+              </div>
+              
+              {/* Payment Date Selection */}
+              <div className="flex items-center justify-between pt-2 mt-4 border-t border-border/40">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  Payment Date 
+                  <span className="font-semibold text-foreground bg-secondary/50 px-2 py-0.5 rounded-md">
+                    {paymentDate === todayStr ? "Today" : new Date(paymentDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </span>
+                <div className="relative overflow-hidden inline-block group">
+                  <span className="text-xs font-semibold text-primary px-3 py-1.5 cursor-pointer rounded-md hover:bg-primary/10 transition-colors">
+                    Change Date
+                  </span>
+                  <input
+                    type="date"
+                    max={todayStr}
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
 

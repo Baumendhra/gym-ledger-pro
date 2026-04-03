@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getMemberStatus } from "@/lib/status";
 import { useAuth } from "@/hooks/useAuth";
-import { type Member, type Payment, type MembershipPlan, PLAN_CONFIG } from "@/types";
+import { type Member, type Payment, type MembershipPlan, type PackageType, PLAN_CONFIG } from "@/types";
 
 
 export function useMembers() {
@@ -14,7 +14,7 @@ export function useMembers() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data as Member[]).map(getMemberStatus);
+      return (data as unknown as Member[]).map(getMemberStatus);
     },
   });
 }
@@ -67,7 +67,9 @@ export function usePayments(memberId: string) {
 export function useCreatePayment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { member_id: string; amount: number; mode: string; note?: string }) => {
+    mutationFn: async (data: { member_id: string; amount: number; mode: string; note?: string; date?: string }) => {
+      const paymentDate = data.date ? new Date(data.date) : new Date();
+      
       const { data: payment, error } = await supabase
         .from("payments")
         .insert({
@@ -75,6 +77,7 @@ export function useCreatePayment() {
           amount: data.amount,
           mode: data.mode,
           note: data.note || "",
+          date: paymentDate.toISOString(),
         })
         .select()
         .single();
@@ -87,18 +90,17 @@ export function useCreatePayment() {
         .eq("id", data.member_id)
         .single();
 
-      const pkg = (memberData?.package_type as PackageType) || "strengthening";
-      const plan = (memberData?.membership_plan as MembershipPlan) || "1_month";
+      const pkg = ((memberData as any)?.package_type as PackageType) || "strengthening";
+      const plan = ((memberData as any)?.membership_plan as MembershipPlan) || "1_month";
       const durationDays = PLAN_CONFIG[pkg]?.[plan]?.durationDays || 30;
 
-      const lastPaymentDate = new Date();
-      const nextDueDate = new Date(lastPaymentDate);
+      const nextDueDate = new Date(paymentDate);
       nextDueDate.setDate(nextDueDate.getDate() + durationDays);
 
       const { error: updateError } = await supabase
         .from("members")
         .update({ 
-          last_payment_date: lastPaymentDate.toISOString(),
+          last_payment_date: paymentDate.toISOString(),
           next_due_date: nextDueDate.toISOString(),
         })
         .eq("id", data.member_id);
