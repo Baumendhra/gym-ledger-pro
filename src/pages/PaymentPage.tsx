@@ -54,8 +54,8 @@ export default function PaymentPage() {
     }
   }, [selected]);
 
-  const UPI_ID = "dharshansmd-1@oksbi";
-  const UPI_NAME = "Dharshan S.M";
+  const UPI_ID = "johnvijayraj.4@oksbi";
+  const UPI_NAME = "Vijay Raj";
 
   const upiString = useMemo(
     () =>
