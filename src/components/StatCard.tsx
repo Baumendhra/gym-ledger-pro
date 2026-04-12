@@ -5,11 +5,19 @@ interface StatCardProps {
   value: string | number;
   icon: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
-export function StatCard({ label, value, icon, className }: StatCardProps) {
+export function StatCard({ label, value, icon, className, onClick }: StatCardProps) {
   return (
-    <div className={cn("glass-card rounded-lg p-4 animate-slide-up", className)}>
+    <div
+      className={cn(
+        "glass-card rounded-lg p-4 animate-slide-up transition-transform",
+        onClick && "cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+        className
+      )}
+      onClick={onClick}
+    >
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10 text-primary">
           {icon}

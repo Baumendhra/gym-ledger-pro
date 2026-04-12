@@ -1,34 +1,59 @@
-import type { Member, MemberStatus, MemberWithStatus } from "@/types";
+import type { Member, MemberWithStatus, PaymentStatus, ActivityStatus, PackageType, MembershipPlan } from "@/types";
+import { PLAN_CONFIG as planConfig } from "@/types";
 
 export function getMemberStatus(member: Member): MemberWithStatus {
-  if (!member.last_payment_date) {
-    return { ...member, status: "overdue", dueDate: null, overdueDays: 0 };
+  const pkg = (member.package_type as PackageType) || "strengthening";
+  const plan = (member.membership_plan as MembershipPlan) || "1_month";
+  const durationDays = planConfig[pkg]?.[plan]?.durationDays || 30;
+
+  let dueDate: Date | null = null;
+  if (member.next_due_date) {
+    dueDate = new Date(member.next_due_date);
+  } else if (member.last_payment_date) {
+    // Fallback if not yet set by migration
+    dueDate = new Date(member.last_payment_date);
+    dueDate.setDate(dueDate.getDate() + durationDays);
   }
 
-  const lastPayment = new Date(member.last_payment_date);
-  const dueDate = new Date(lastPayment);
-  dueDate.setDate(dueDate.getDate() + 30);
-  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
+  if (!dueDate) {
+    return { 
+      ...member, 
+      paymentStatus: "overdue", 
+      activityStatus: "inactive",
+      dueDate: null, 
+      overdueDays: 0,
+      dueInDays: 0,
+    };
+  }
+
   const diffMs = dueDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  let status: MemberStatus;
+  let paymentStatus: PaymentStatus = "overdue";
+  let activityStatus: ActivityStatus = "inactive";
+
   if (diffDays < 0) {
-    status = "overdue";
-  } else if (diffDays <= 3) {
-    status = "due";
+    paymentStatus = "overdue";
+    activityStatus = "inactive";
   } else {
-    status = "paid";
+    activityStatus = "active";
+    if (diffDays <= 3) {
+      paymentStatus = "due";
+    } else {
+      paymentStatus = "paid";
+    }
   }
 
   return {
     ...member,
-    status,
+    paymentStatus,
+    activityStatus,
     dueDate,
     overdueDays: diffDays < 0 ? Math.abs(diffDays) : 0,
+    dueInDays: diffDays > 0 ? diffDays : 0,
   };
 }
 

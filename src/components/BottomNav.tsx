@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CreditCard, AlertCircle } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, AlertCircle, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/members", icon: Users, label: "Members" },
   { to: "/payment", icon: CreditCard, label: "Pay" },
   { to: "/pending", icon: AlertCircle, label: "Pending" },
+  { to: "/analytics", icon: BarChart3, label: "Stats" },
 ];
 
 export function BottomNav() {

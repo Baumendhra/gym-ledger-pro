@@ -13,13 +13,13 @@ function downloadCSV(filename: string, csvContent: string) {
 }
 
 export function exportMembersCSV(members: MemberWithStatus[]) {
-  const header = "Name,Phone,Batch,Status,Last Payment,Due Date,Overdue Days,Member Since\n";
+  const header = "Name,Phone,Membership Plan,Status,Last Payment,Due Date,Overdue Days,Member Since\n";
   const rows = members.map((m) =>
     [
       `"${m.name}"`,
       m.phone,
-      m.batch,
-      m.status,
+      m.membership_plan ?? "monthly",
+      `${m.activityStatus} / ${m.paymentStatus}`,
       formatDate(m.last_payment_date),
       m.dueDate ? formatDate(m.dueDate) : "N/A",
       m.overdueDays,
@@ -40,4 +40,24 @@ export function exportPaymentsCSV(payments: Payment[], memberName: string) {
     ].join(",")
   ).join("\n");
   downloadCSV(`gymkhata-payments-${memberName.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`, header + rows);
+}
+
+export function exportMonthlyCSV(payments: any[], monthLabel: string) {
+  const header = "Member Name,Phone,Membership Plan,Package Type,Amount,Payment Mode,Payment Date\n";
+  const rows = payments.map((p) =>
+    [
+      `"${p.member?.name || "Unknown"}"`,
+      p.member?.phone || "-",
+      p.member?.membership_plan || "-",
+      p.member?.package_type || "-",
+      p.amount,
+      p.mode,
+      formatDate(p.date),
+    ].join(",")
+  ).join("\n");
+  
+  // Create safe filename (e.g. "January 2026" -> "January-2026")
+  const safeMonth = monthLabel.replace(/\s+/g, "-");
+  
+  downloadCSV(`gymkhata-payments-${safeMonth}.csv`, header + rows);
 }

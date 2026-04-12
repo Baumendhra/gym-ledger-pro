@@ -1,19 +1,37 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMembers, usePayments } from "@/hooks/useMembers";
+import { useMembers, usePayments, useDeleteMember } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatCurrency } from "@/lib/status";
 import { exportPaymentsCSV } from "@/lib/export";
-import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle } from "lucide-react";
+import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { PLAN_CONFIG } from "@/types";
 
 export default function MemberDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: members = [] } = useMembers();
   const { data: payments = [], isLoading } = usePayments(id || "");
+  const deleteMember = useDeleteMember();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const member = members.find((m) => m.id === id);
+
+  function handleDeleteConfirm() {
+    if (!id) return;
+    deleteMember.mutate(id, {
+      onSuccess: () => {
+        toast.success("Member deleted");
+        navigate("/members");
+      },
+      onError: () => {
+        toast.error("Failed to delete member");
+        setShowDeleteDialog(false);
+      },
+    });
+  }
 
   if (!member) {
     return (
@@ -40,13 +58,15 @@ export default function MemberDetail() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-lg font-bold truncate">{member.name}</h1>
-            <StatusBadge status={member.status} />
+            <StatusBadge paymentStatus={member.paymentStatus} activityStatus={member.activityStatus} />
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Phone className="w-3.5 h-3.5" />
             <span>{member.phone}</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{member.batch} batch {member.membership_type ? `• ${member.membership_type}` : ''}</p>
+          <p className="text-xs text-muted-foreground mt-1 capitalize">
+            {member.package_type || "Strengthening"} • {PLAN_CONFIG[(member.package_type as "strengthening" | "cardio") || "strengthening"]?.[(member.membership_plan as "1_month"| "3_months"| "6_months" | "1_year") || "1_month"]?.label || member.membership_plan}
+          </p>
         </div>
       </div>
 
@@ -127,6 +147,63 @@ export default function MemberDetail() {
           </div>
         )}
       </div>
+
+      {/* Delete Member */}
+      <Button
+        variant="outline"
+        className="w-full border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400 hover:border-red-400 transition-colors gap-2"
+        onClick={() => setShowDeleteDialog(true)}
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete Member
+      </Button>
+
+      {/* Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowDeleteDialog(false)}
+          />
+          {/* Dialog */}
+          <div className="relative glass-card rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4 animate-slide-up">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mx-auto">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="font-bold text-base">Delete Member</h3>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete <span className="font-semibold text-foreground">{member.name}</span>? This will also remove all their payment records. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={deleteMember.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0"
+                onClick={handleDeleteConfirm}
+                disabled={deleteMember.isPending}
+              >
+                {deleteMember.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting…
+                  </span>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

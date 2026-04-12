@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Search, CheckCircle2, Banknote, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import type { MemberWithStatus } from "@/types";
+import { type MemberWithStatus, PLAN_CONFIG, type PackageType, type MembershipPlan } from "@/types";
 import { useSearchParams } from "react-router-dom";
 
 const QUICK_AMOUNTS = [500, 1000, 1500, 2000];
@@ -22,6 +22,12 @@ export default function PaymentPage() {
   const [mode, setMode] = useState<"UPI" | "Cash">("UPI");
   const [confirmed, setConfirmed] = useState(false);
   const memberIdFromQuery = searchParams.get("memberId");
+
+  const todayStr = useMemo(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  }, []);
+  const [paymentDate, setPaymentDate] = useState(todayStr);
 
   const filtered = search
     ? members.filter(
@@ -40,8 +46,16 @@ export default function PaymentPage() {
     }
   }, [memberIdFromQuery, members]);
 
-  const UPI_ID = "dharshansmd-1@oksbi";
-  const UPI_NAME = "Dharshan S.M";
+  useEffect(() => {
+    if (selected) {
+      const pkg = (selected.package_type as PackageType) || "strengthening";
+      const plan = (selected.membership_plan as MembershipPlan) || "1_month";
+      setAmount(PLAN_CONFIG[pkg]?.[plan]?.fee || 699);
+    }
+  }, [selected]);
+
+  const UPI_ID = "johnvijayraj.4@oksbi";
+  const UPI_NAME = "Vijay Raj";
 
   const upiString = useMemo(
     () =>
@@ -54,11 +68,18 @@ export default function PaymentPage() {
   const handleConfirm = async () => {
     if (!selected) return;
     try {
+      let finalDate = new Date();
+      if (paymentDate && paymentDate !== todayStr) {
+        finalDate = new Date(paymentDate);
+        finalDate.setHours(12, 0, 0, 0); // Noon to avoid timezone offset issues
+      }
+
       await createPayment.mutateAsync({
         member_id: selected.id,
         amount,
         mode,
-        note: `${selected.name} - ${new Date().toLocaleDateString("en-IN", { month: "long" })}`,
+        note: `${selected.name} - ${finalDate.toLocaleDateString("en-IN", { month: "long" })}`,
+        date: finalDate.toISOString(),
       });
       setConfirmed(true);
       toast.success(`${formatCurrency(amount)} received from ${selected.name}`);
@@ -66,6 +87,8 @@ export default function PaymentPage() {
         setSelected(null);
         setConfirmed(false);
         setSearch("");
+        setAmount(1000);
+        setPaymentDate(todayStr);
       }, 2000);
     } catch {
       toast.error("Payment failed");
@@ -137,15 +160,23 @@ export default function PaymentPage() {
               </Button>
             </div>
 
-            {/* Quick amounts */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">Amount</p>
+            {/* Amount Configuration */}
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Amount to Pay</p>
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(Number(e.target.value) || 0)}
+                  className="h-12 text-lg font-semibold"
+                />
+              </div>
               <div className="grid grid-cols-4 gap-2">
                 {QUICK_AMOUNTS.map((a) => (
                   <button
                     key={a}
                     onClick={() => setAmount(a)}
-                    className={`py-3 rounded-lg text-sm font-semibold transition-all active:scale-95 ${
+                    className={`py-2 rounded-lg text-sm font-semibold transition-all active:scale-95 ${
                       amount === a
                         ? "bg-primary text-primary-foreground shadow-md"
                         : "glass-card hover:shadow-sm"
@@ -154,6 +185,28 @@ export default function PaymentPage() {
                     {formatCurrency(a)}
                   </button>
                 ))}
+              </div>
+              
+              {/* Payment Date Selection */}
+              <div className="flex items-center justify-between pt-2 mt-4 border-t border-border/40">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  Payment Date 
+                  <span className="font-semibold text-foreground bg-secondary/50 px-2 py-0.5 rounded-md">
+                    {paymentDate === todayStr ? "Today" : new Date(paymentDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </span>
+                <div className="relative overflow-hidden inline-block group">
+                  <span className="text-xs font-semibold text-primary px-3 py-1.5 cursor-pointer rounded-md hover:bg-primary/10 transition-colors">
+                    Change Date
+                  </span>
+                  <input
+                    type="date"
+                    max={todayStr}
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
 

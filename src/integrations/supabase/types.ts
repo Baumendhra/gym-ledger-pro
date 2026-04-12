@@ -16,7 +16,7 @@ export type Database = {
     Tables: {
       members: {
         Row: {
-          batch: string
+          membership_plan: string
           created_at: string
           id: string
           last_payment_date: string | null
@@ -25,7 +25,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          batch?: string
+          membership_plan?: string
           created_at?: string
           id?: string
           last_payment_date?: string | null
@@ -34,7 +34,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          batch?: string
+          membership_plan?: string
           created_at?: string
           id?: string
           last_payment_date?: string | null

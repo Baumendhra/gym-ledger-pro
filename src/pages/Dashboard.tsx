@@ -7,10 +7,12 @@ import { exportMembersCSV } from "@/lib/export";
 import { IndianRupee, Users, AlertTriangle, Clock, Dumbbell, LogOut, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { data: members = [], isLoading } = useMembers();
   const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const overdueMembers = members.filter((m) => m.status === "overdue");
   const dueSoonMembers = members.filter((m) => m.status === "due");
@@ -51,19 +53,21 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Total Members" value={members.length} icon={<Users className="w-5 h-5" />} />
-        <StatCard label="Paid" value={paidMembers.length} icon={<IndianRupee className="w-5 h-5" />} />
+        <StatCard label="Total Members" value={members.length} icon={<Users className="w-5 h-5" />} onClick={() => navigate("/members")} />
+        <StatCard label="Paid" value={paidMembers.length} icon={<IndianRupee className="w-5 h-5" />} onClick={() => navigate("/members")} />
         <StatCard
           label="Overdue"
           value={overdueMembers.length}
           icon={<AlertTriangle className="w-5 h-5" />}
           className={overdueMembers.length > 0 ? "border-status-overdue/30" : ""}
+          onClick={() => navigate("/pending")}
         />
         <StatCard
           label="Due Soon"
           value={dueSoonMembers.length}
           icon={<Clock className="w-5 h-5" />}
           className={dueSoonMembers.length > 0 ? "border-status-due/30" : ""}
+          onClick={() => navigate("/pending")}
         />
       </div>
 
