@@ -12,7 +12,6 @@ import PendingPage from "@/pages/PendingPage";
 import MemberDetail from "@/pages/MemberDetail";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import AuthPage from "@/pages/AuthPage";
-import CheckInPage from "@/pages/CheckInPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,7 +38,6 @@ function ProtectedRoutes() {
         <Route path="/pending" element={<PendingPage />} />
         <Route path="/member/:id" element={<MemberDetail />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/checkin" element={<CheckInPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BottomNav />
