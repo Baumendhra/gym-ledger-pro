@@ -14,9 +14,9 @@ export default function Dashboard() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
-  const overdueMembers = members.filter((m) => m.status === "overdue");
-  const dueSoonMembers = members.filter((m) => m.status === "due");
-  const paidMembers = members.filter((m) => m.status === "paid");
+  const overdueMembers = members.filter((m) => m.paymentStatus === "overdue");
+  const dueSoonMembers = members.filter((m) => m.paymentStatus === "due");
+  const paidMembers = members.filter((m) => m.paymentStatus === "paid");
 
   const handleLogout = async () => {
     await signOut();
