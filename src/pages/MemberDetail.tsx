@@ -92,7 +92,7 @@ export default function MemberDetail() {
           className="px-3"
           onClick={() => {
             const msg = encodeURIComponent(
-              member.status === "overdue" || member.status === "due"
+              member.paymentStatus === "overdue" || member.paymentStatus === "due"
                 ? `Hi ${member.name}, your gym fee is pending. Please clear it at your earliest convenience. — GymKhata Pro`
                 : `Hi ${member.name}, `
             );
