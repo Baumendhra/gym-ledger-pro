@@ -41,14 +41,14 @@ export default function CheckInPage() {
     if (!selectedId) return;
     setBusy(true);
     const v = await verifyMember(selectedId, last4);
-    if (!v.success) {
+    if (v.success !== true) {
       setBusy(false);
       toast.error(v.error);
       return;
     }
     const c = await checkInMember(selectedId);
     setBusy(false);
-    if (!c.success) {
+    if (c.success !== true) {
       setResult({ ok: false, message: c.error });
       setStep("done");
       return;
