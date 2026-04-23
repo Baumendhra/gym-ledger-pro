@@ -16,29 +16,35 @@ export type Database = {
     Tables: {
       members: {
         Row: {
-          membership_plan: string
           created_at: string
           id: string
           last_payment_date: string | null
+          membership_plan: string
           name: string
+          next_due_date: string | null
+          package_type: string | null
           phone: string
           user_id: string
         }
         Insert: {
-          membership_plan?: string
           created_at?: string
           id?: string
           last_payment_date?: string | null
+          membership_plan?: string
           name: string
+          next_due_date?: string | null
+          package_type?: string | null
           phone: string
           user_id: string
         }
         Update: {
-          membership_plan?: string
           created_at?: string
           id?: string
           last_payment_date?: string | null
+          membership_plan?: string
           name?: string
+          next_due_date?: string | null
+          package_type?: string | null
           phone?: string
           user_id?: string
         }
@@ -50,24 +56,30 @@ export type Database = {
           date: string
           id: string
           member_id: string
+          membership_plan: string | null
           mode: string
           note: string | null
+          package_type: string | null
         }
         Insert: {
           amount: number
           date?: string
           id?: string
           member_id: string
+          membership_plan?: string | null
           mode: string
           note?: string | null
+          package_type?: string | null
         }
         Update: {
           amount?: number
           date?: string
           id?: string
           member_id?: string
+          membership_plan?: string | null
           mode?: string
           note?: string | null
+          package_type?: string | null
         }
         Relationships: [
           {
