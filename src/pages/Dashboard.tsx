@@ -25,28 +25,28 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   // ── Category counts ───────────────────────────────────────────────────────
-  const cardioMembers    = members.filter((m) => m.package_type === "cardio");
-  const strengthMembers  = members.filter((m) => m.package_type === "strengthening");
+  const cardioMembers = members.filter((m) => m.package_type === "cardio");
+  const strengthMembers = members.filter((m) => m.package_type === "strengthening");
 
   // ── Status counts ─────────────────────────────────────────────────────────
-  const activeMembers    = members.filter((m) => m.finalStatus === "Active");
-  const atRiskMembers    = members.filter((m) => m.finalStatus === "At Risk");
-  const inactiveMembers  = members.filter((m) => m.finalStatus === "Inactive");
-  const newMembers       = members.filter((m) => m.finalStatus === "New");
-  const reminderMembers  = members.filter((m) => m.needsReminder);
+  const activeMembers = members.filter((m) => m.finalStatus === "Active");
+  const atRiskMembers = members.filter((m) => m.finalStatus === "At Risk");
+  const inactiveMembers = members.filter((m) => m.finalStatus === "Inactive");
+  const newMembers = members.filter((m) => m.finalStatus === "New");
+  const reminderMembers = members.filter((m) => m.needsReminder);
 
   // ── Payment counts ────────────────────────────────────────────────────────
-  const overdueMembers   = members.filter((m) => m.paymentStatus === "overdue");
-  const dueSoonMembers   = members.filter((m) => m.paymentStatus === "due");
-  const duesMembers      = members.filter((m) => m.hasDues);
+  const overdueMembers = members.filter((m) => m.paymentStatus === "overdue");
+  const dueSoonMembers = members.filter((m) => m.paymentStatus === "due");
+  const duesMembers = members.filter((m) => m.hasDues);
   const overdueMembers10 = members.filter((m) => m.isOverdue10Days);
 
   // ── Attendance calculations ────────────────────────────────────────────────
-  const todayStr         = new Date().toDateString();
-  const currentMonth     = new Date().getMonth();
-  const currentYear      = new Date().getFullYear();
+  const todayStr = new Date().toDateString();
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
 
-  const todayAttendance  = checkIns.filter((c) => {
+  const todayAttendance = checkIns.filter((c) => {
     try { return new Date(c.checked_in_at).toDateString() === todayStr; } catch { return false; }
   }).length;
 

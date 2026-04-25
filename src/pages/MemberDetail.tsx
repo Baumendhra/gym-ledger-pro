@@ -68,7 +68,7 @@ export default function MemberDetail() {
             <span>{member.phone}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-1 capitalize">
-            {member.package_type || "Strengthening"} • {PLAN_CONFIG[(member.package_type as "strengthening" | "cardio") || "strengthening"]?.[(member.membership_plan as "1_month"| "3_months"| "6_months" | "1_year") || "1_month"]?.label || member.membership_plan}
+            {member.package_type || "Strengthening"} • {PLAN_CONFIG[(member.package_type as "strengthening" | "cardio") || "strengthening"]?.[(member.membership_plan as "1_month" | "3_months" | "6_months" | "1_year") || "1_month"]?.label || member.membership_plan}
           </p>
         </div>
       </div>
@@ -94,10 +94,10 @@ export default function MemberDetail() {
           variant="outline"
           className="px-3"
           onClick={() => {
-            const raw   = String(member.phone).replace(/\D/g, "");
+            const raw = String(member.phone).replace(/\D/g, "");
             const phone = raw.startsWith("91") ? raw : `91${raw}`;
-            const days  = daysSinceVisit(member.last_visit_date);
-            const msg   = member.needsReminder && days !== null
+            const days = daysSinceVisit(member.last_visit_date);
+            const msg = member.needsReminder && days !== null
               ? `Hi ${member.name}, we noticed you haven't visited the gym for ${days} day${days === 1 ? "" : "s"}. We'd love to see you back! 💪`
               : `Hi ${member.name}, hope you're doing great! See you at the gym soon. 🏋️`;
             window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");

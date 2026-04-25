@@ -14,31 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      check_ins: {
+        Row: {
+          checked_in_at: string
+          id: string
+          member_id: string
+        }
+        Insert: {
+          checked_in_at?: string
+          id?: string
+          member_id: string
+        }
+        Update: {
+          checked_in_at?: string
+          id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
-          membership_plan: string
           created_at: string
           id: string
           last_payment_date: string | null
+          last_visit_date: string | null
+          membership_plan: string
           name: string
+          next_due_date: string | null
+          package_type: string | null
           phone: string
           user_id: string
         }
         Insert: {
-          membership_plan?: string
           created_at?: string
           id?: string
           last_payment_date?: string | null
+          last_visit_date?: string | null
+          membership_plan?: string
           name: string
+          next_due_date?: string | null
+          package_type?: string | null
           phone: string
           user_id: string
         }
         Update: {
-          membership_plan?: string
           created_at?: string
           id?: string
           last_payment_date?: string | null
+          last_visit_date?: string | null
+          membership_plan?: string
           name?: string
+          next_due_date?: string | null
+          package_type?: string | null
           phone?: string
           user_id?: string
         }
@@ -50,24 +85,30 @@ export type Database = {
           date: string
           id: string
           member_id: string
+          membership_plan: string | null
           mode: string
           note: string | null
+          package_type: string | null
         }
         Insert: {
           amount: number
           date?: string
           id?: string
           member_id: string
+          membership_plan?: string | null
           mode: string
           note?: string | null
+          package_type?: string | null
         }
         Update: {
           amount?: number
           date?: string
           id?: string
           member_id?: string
+          membership_plan?: string | null
           mode?: string
           note?: string | null
+          package_type?: string | null
         }
         Relationships: [
           {
