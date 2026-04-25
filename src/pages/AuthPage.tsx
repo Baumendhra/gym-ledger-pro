@@ -49,7 +49,7 @@ export default function AuthPage() {
           <div className="p-3 rounded-2xl bg-primary text-primary-foreground">
             <Dumbbell className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">GymKhata Pro</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Vijay Fitness</h1>
           <p className="text-sm text-muted-foreground">
             {isSignUp ? "Create your account" : "Sign in to your account"}
           </p>

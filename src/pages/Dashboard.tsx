@@ -75,7 +75,7 @@ export default function Dashboard() {
           <Dumbbell className="w-6 h-6" />
         </div>
         <div className="flex-1">
-          <h1 className="text-xl font-bold tracking-tight">GymKhata Pro</h1>
+          <h1 className="text-xl font-bold tracking-tight">Vijay Fitness</h1>
           <p className="text-xs text-muted-foreground">
             {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
           </p>

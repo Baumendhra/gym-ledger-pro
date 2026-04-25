@@ -36,7 +36,7 @@ export default function PendingPage() {
 
   const handleWhatsApp = (name: string, phone: string) => {
     const msg = encodeURIComponent(
-      `Hi ${name}, your gym fee is pending. Please clear it at your earliest convenience. — GymKhata Pro`
+      `Hi ${name}, your gym fee is pending. Please clear it at your earliest convenience. — Vijay Fitness`
     );
     window.open(`https://wa.me/91${phone}?text=${msg}`, "_blank");
   };

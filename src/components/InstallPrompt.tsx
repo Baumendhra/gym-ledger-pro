@@ -46,7 +46,7 @@ export function InstallPrompt() {
   return (
     <div className="fixed bottom-20 left-4 right-4 md:bottom-6 md:right-6 md:left-auto md:w-80 bg-card text-card-foreground shadow-lg border rounded-lg p-4 z-50 flex items-start gap-3">
       <div className="flex-1">
-        <h3 className="font-semibold text-sm mb-1">Install GymKhata Pro</h3>
+        <h3 className="font-semibold text-sm mb-1">Install Vijay Fitness</h3>
         <p className="text-xs text-muted-foreground mb-3">Install our app on your home screen for quick and easy access, even offline.</p>
         <button
           onClick={handleInstallClick}
