@@ -4,6 +4,35 @@ import { getMemberStatus } from "@/lib/status";
 import { useAuth } from "@/hooks/useAuth";
 import { type Member, type Payment, type MembershipPlan, type PackageType, PLAN_CONFIG } from "@/types";
 
+export interface CheckInRow {
+  id: string;
+  member_id: string;
+  checked_in_at: string;
+}
+
+/** Fetches all check_ins for members belonging to the current gym (user_id). */
+export function useCheckIns() {
+  const { user } = useAuth();
+  return useQuery<CheckInRow[]>({
+    queryKey: ["check_ins", user?.id],
+    enabled: !!user?.id,
+    staleTime: 60_000, // refresh every minute
+    queryFn: async () => {
+      // Pull check_ins joined with members to scope to this gym
+      const { data, error } = await supabase
+        .from("check_ins")
+        .select("id, member_id, checked_in_at, members!inner(user_id)")
+        .eq("members.user_id", user!.id);
+      if (error) throw error;
+      return (data as any[]).map((r) => ({
+        id: r.id,
+        member_id: r.member_id,
+        checked_in_at: r.checked_in_at,
+      }));
+    },
+  });
+}
+
 
 export function useMembers() {
   return useQuery({
@@ -11,10 +40,10 @@ export function useMembers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("*")
+        .select("*, check_ins(count)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data as unknown as Member[]).map(getMemberStatus);
+      return (data as any[]).map(getMemberStatus);
     },
   });
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymkhata-pro-v3'; // Incremented to v3 to bust the old faulty cache
+const CACHE_NAME = 'gymkhata-pro-v4'; // Incremented to bust the old faulty cache
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

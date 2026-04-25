@@ -7,6 +7,7 @@ export interface Member {
   membership_type?: MembershipType;
   last_payment_date: string | null;
   next_due_date: string | null;
+  last_visit_date: string | null;
   created_at: string;
 }
 
@@ -46,8 +47,14 @@ export type ActivityStatus = "active" | "inactive";
 
 export interface MemberWithStatus extends Member {
   paymentStatus: PaymentStatus;
-  activityStatus: ActivityStatus;
+  finalStatus: "Active" | "At Risk" | "Inactive" | "New";
+  inactiveReason: string | null;
   dueDate: Date | null;
   overdueDays: number;
   dueInDays: number;
+  hasDues: boolean;
+  isOverdue10Days: boolean;
+  totalCheckins: number;
+  needsReminder: boolean;
+  daysSinceVisit: number | null;
 }

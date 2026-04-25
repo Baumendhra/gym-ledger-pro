@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMembers, usePayments, useDeleteMember } from "@/hooks/useMembers";
+import { useMembers, usePayments, useDeleteMember, useCheckIns } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
-import { formatDate, formatCurrency } from "@/lib/status";
-import { exportPaymentsCSV } from "@/lib/export";
-import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2 } from "lucide-react";
+import { formatDate, formatCurrency, daysSinceVisit, formatVisitAge } from "@/lib/status";
+import { exportPaymentsCSV, exportMemberAttendanceCSV } from "@/lib/export";
+import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PLAN_CONFIG } from "@/types";
@@ -14,10 +14,13 @@ export default function MemberDetail() {
   const navigate = useNavigate();
   const { data: members = [] } = useMembers();
   const { data: payments = [], isLoading } = usePayments(id || "");
+  const { data: allCheckIns = [] } = useCheckIns();
   const deleteMember = useDeleteMember();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const member = members.find((m) => m.id === id);
+  // Filter check_ins to only this member's records
+  const memberCheckIns = allCheckIns.filter((c) => c.member_id === id);
 
   function handleDeleteConfirm() {
     if (!id) return;
@@ -58,7 +61,7 @@ export default function MemberDetail() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-lg font-bold truncate">{member.name}</h1>
-            <StatusBadge paymentStatus={member.paymentStatus} activityStatus={member.activityStatus} />
+            <StatusBadge finalStatus={member.finalStatus} />
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Phone className="w-3.5 h-3.5" />
@@ -91,12 +94,13 @@ export default function MemberDetail() {
           variant="outline"
           className="px-3"
           onClick={() => {
-            const msg = encodeURIComponent(
-              member.status === "overdue" || member.status === "due"
-                ? `Hi ${member.name}, your gym fee is pending. Please clear it at your earliest convenience. — GymKhata Pro`
-                : `Hi ${member.name}, `
-            );
-            window.open(`https://wa.me/91${member.phone}?text=${msg}`, "_blank");
+            const raw   = String(member.phone).replace(/\D/g, "");
+            const phone = raw.startsWith("91") ? raw : `91${raw}`;
+            const days  = daysSinceVisit(member.last_visit_date);
+            const msg   = member.needsReminder && days !== null
+              ? `Hi ${member.name}, we noticed you haven't visited the gym for ${days} day${days === 1 ? "" : "s"}. We'd love to see you back! 💪`
+              : `Hi ${member.name}, hope you're doing great! See you at the gym soon. 🏋️`;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
           }}
           title="Send WhatsApp Message"
         >
@@ -109,6 +113,14 @@ export default function MemberDetail() {
           title="Export payments CSV"
         >
           <Download className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => { exportMemberAttendanceCSV(memberCheckIns, member.name); toast.success("Attendance exported"); }}
+          title="Export attendance CSV"
+        >
+          <UserCheck className="w-4 h-4" />
         </Button>
       </div>
 

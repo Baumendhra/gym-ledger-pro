@@ -69,7 +69,7 @@ export default function PendingPage() {
                     </p>
                   </div>
                 </div>
-                <StatusBadge paymentStatus={m.paymentStatus} activityStatus={m.activityStatus} />
+                <StatusBadge finalStatus={m.finalStatus} />
               </div>
 
               {m.overdueDays > 0 && (

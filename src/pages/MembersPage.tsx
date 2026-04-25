@@ -1,24 +1,52 @@
-import { useState } from "react";
-import { useMembers, useCreateMember } from "@/hooks/useMembers";
+import { useState, useEffect } from "react";
+import { useMembers, useCreateMember, useCheckIns } from "@/hooks/useMembers";
 import { MemberCard } from "@/components/MemberCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { exportMembersCSV } from "@/lib/export";
+import { exportDailyCSV, exportMonthlyMembersCSV, exportAttendanceCSV } from "@/lib/export";
 import { type MembershipPlan, type PackageType, PLAN_CONFIG } from "@/types";
-import { Search, Plus, Download } from "lucide-react";
+import { Search, Plus, Download, Clock, FileText, CalendarDays, UserCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type FilterType = "All" | "New" | "Active" | "At Risk" | "Inactive" | "Needs Reminder" | "Strengthening" | "Cardio" | "Dues" | "Overdue" | "Attended Today";
 
 export default function MembersPage() {
   const { data: members = [], isLoading } = useMembers();
+  const { data: checkIns = [] } = useCheckIns();
   const createMember = useCreateMember();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [packageType, setPackageType] = useState<PackageType>("strengthening");
   const [membershipPlan, setMembershipPlan] = useState<MembershipPlan>("1_month");
-  const [filter, setFilter] = useState<"All" | "Active" | "Inactive" | "Due" | "Overdue" | "Strengthening" | "Cardio">("All");
+  const [filter, setFilter] = useState<FilterType>("All");
+
+  // Sync filter from URL query param (e.g. ?filter=Cardio from dashboard)
+  useEffect(() => {
+    const urlFilter = searchParams.get("filter");
+    if (urlFilter) setFilter(urlFilter as FilterType);
+  }, [searchParams]);
+
+  // Build set of member IDs who checked in today
+  const todayStr = new Date().toDateString();
+  const attendedTodayIds = new Set(
+    checkIns
+      .filter((c) => {
+        try { return new Date(c.checked_in_at).toDateString() === todayStr; }
+        catch { return false; }
+      })
+      .map((c) => c.member_id)
+  );
 
   const filtered = members
     .filter((m) => {
@@ -26,19 +54,23 @@ export default function MembersPage() {
         m.name.toLowerCase().includes(search.toLowerCase()) || m.phone.includes(search);
       if (!matchesSearch) return false;
 
-      if (filter === "Active") return m.activityStatus === "active";
-      if (filter === "Inactive") return m.activityStatus === "inactive";
-      if (filter === "Due") return m.paymentStatus === "due";
-      if (filter === "Overdue") return m.paymentStatus === "overdue";
-      if (filter === "Strengthening") return m.package_type === "strengthening";
-      if (filter === "Cardio") return m.package_type === "cardio";
+      if (filter === "Active")         return m.finalStatus === "Active";
+      if (filter === "New")            return m.finalStatus === "New";
+      if (filter === "At Risk")        return m.finalStatus === "At Risk";
+      if (filter === "Inactive")       return m.finalStatus === "Inactive";
+      if (filter === "Needs Reminder") return m.needsReminder;
+      if (filter === "Strengthening")  return m.package_type === "strengthening";
+      if (filter === "Cardio")         return m.package_type === "cardio";
+      if (filter === "Dues")           return m.hasDues;
+      if (filter === "Overdue")        return m.isOverdue10Days;
+      if (filter === "Attended Today") return attendedTodayIds.has(m.id);
       return true;
     })
     .sort((a, b) => {
       const getPriority = (m: typeof members[0]) => {
         if (m.paymentStatus === "overdue") return 0;
         if (m.paymentStatus === "due") return 1;
-        if (m.activityStatus === "inactive") return 2;
+        if (m.finalStatus === "Inactive") return 2;
         return 3;
       };
 
@@ -72,14 +104,27 @@ export default function MembersPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Members</h1>
         <div className="flex gap-1.5">
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => { exportMembersCSV(members); toast.success("Members exported"); }}
-          >
-            <Download className="w-4 h-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1.5" title="Download Reports">
+                <Download className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { exportAttendanceCSV(filtered); toast.success("Attendance CSV exported"); }}>
+                <UserCheck className="w-4 h-4 mr-2" /> Attendance Report
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { exportDailyCSV(filtered, true); toast.success("Daily Report (Today) exported"); }}>
+                <Clock className="w-4 h-4 mr-2" /> Daily Report (Today)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { exportDailyCSV(filtered, false); toast.success("Daily Report (All) exported"); }}>
+                <FileText className="w-4 h-4 mr-2" /> Daily Report (All Members)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { exportMonthlyMembersCSV(filtered); toast.success("Monthly Report exported"); }}>
+                <CalendarDays className="w-4 h-4 mr-2" /> Monthly Report
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
@@ -155,20 +200,38 @@ export default function MembersPage() {
       </div>
 
       <div className="flex gap-2 text-sm overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-        {["All", "Active", "Inactive", "Due", "Overdue", "Strengthening", "Cardio"].map((f) => (
+        {([
+          { label: "All", value: "All" },
+          { label: "New", value: "New" },
+          { label: "Active", value: "Active" },
+          { label: "⚡ At Risk", value: "At Risk" },
+          { label: "Inactive", value: "Inactive" },
+          { label: "🔔 Reminder", value: "Needs Reminder" },
+          { label: "Strengthening", value: "Strengthening" },
+          { label: "Cardio", value: "Cardio" },
+          { label: "Dues", value: "Dues" },
+          { label: "Overdue", value: "Overdue" },
+          { label: "✅ Today", value: "Attended Today" },
+        ] as const).map(({ label, value }) => (
           <button
-            key={f}
-            onClick={() => setFilter(f as any)}
+            key={value}
+            onClick={() => setFilter(value as any)}
             className={`whitespace-nowrap px-3 py-1.5 rounded-full font-medium transition-all ${
-              filter === f
-                ? "bg-primary text-primary-foreground shadow-sm"
+              filter === value
+                ? value === "At Risk" ? "bg-yellow-500 text-white shadow-sm"
+                  : value === "Needs Reminder" ? "bg-amber-500 text-white shadow-sm"
+                  : value === "Inactive" ? "bg-red-500 text-white shadow-sm"
+                  : value === "Active" ? "bg-green-600 text-white shadow-sm"
+                  : value === "New" ? "bg-gray-500 text-white shadow-sm"
+                  : "bg-primary text-primary-foreground shadow-sm"
                 : "bg-secondary/50 text-primary hover:bg-secondary"
             }`}
           >
-            {f}
+            {label}
           </button>
         ))}
       </div>
+
 
       <div className="space-y-2">
         {isLoading ? (

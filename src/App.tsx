@@ -12,6 +12,7 @@ import PendingPage from "@/pages/PendingPage";
 import MemberDetail from "@/pages/MemberDetail";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import AuthPage from "@/pages/AuthPage";
+import CheckInPage from "@/pages/CheckInPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
           <div className="min-h-screen bg-background">
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/checkin" element={<CheckInPage />} />
               <Route path="/*" element={<ProtectedRoutes />} />
             </Routes>
             <InstallPrompt />
