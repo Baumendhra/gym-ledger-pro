@@ -114,14 +114,6 @@ export default function MemberDetail() {
         >
           <Download className="w-4 h-4" />
         </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => { exportMemberAttendanceCSV(memberCheckIns, member.name); toast.success("Attendance exported"); }}
-          title="Export attendance CSV"
-        >
-          <UserCheck className="w-4 h-4" />
-        </Button>
       </div>
 
       {/* Payment Timeline */}

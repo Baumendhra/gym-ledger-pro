@@ -46,9 +46,14 @@ export default function Dashboard() {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
 
-  const todayAttendance = checkIns.filter((c) => {
-    try { return new Date(c.checked_in_at).toDateString() === todayStr; } catch { return false; }
-  }).length;
+  const uniqueToday = new Set(
+    checkIns
+      .filter((c) => {
+        try { return new Date(c.checked_in_at).toDateString() === todayStr; } catch { return false; }
+      })
+      .map(c => c.member_id)
+  );
+  const todayAttendance = uniqueToday.size;
 
   const monthlyAttendance = checkIns.filter((c) => {
     try {
@@ -106,20 +111,26 @@ export default function Dashboard() {
       {/* ── Attendance ─────────────────────────────────────────────────────── */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Attendance</p>
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Today's Check-ins" value={todayAttendance} icon={<UserCheck className="w-5 h-5 text-blue-500" />} className="border-blue-500/20" onClick={() => navigate("/members?filter=Attended+Today")} />
-          <StatCard label={`${monthName} Total`} value={monthlyAttendance} icon={<TrendingUp className="w-5 h-5 text-violet-500" />} className="border-violet-500/20" />
-        </div>
+        <StatCard label="Today's Check-ins" value={todayAttendance} icon={<UserCheck className="w-5 h-5 text-blue-500" />} className="border-blue-500/20" onClick={() => navigate("/members?filter=Attended+Today")} />
       </div>
 
       {/* ── Members Overview ───────────────────────────────────────────────── */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Members Overview</p>
-        <div className="grid grid-cols-4 gap-3">
-          <StatCard label="Total" value={members.length} icon={<Users className="w-5 h-5" />} onClick={() => navigate("/members")} />
-          <StatCard label="New" value={newMembers.length} icon={<UserCheck className="w-5 h-5 text-gray-500" />} onClick={() => navigate("/members?filter=New")} />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard label="Total Members" value={members.length} icon={<Users className="w-5 h-5" />} onClick={() => navigate("/members")} />
           <StatCard label="Active" value={activeMembers.length} icon={<Dumbbell className="w-5 h-5 text-green-500" />} onClick={() => navigate("/members?filter=Active")} />
+          <StatCard label="At Risk" value={atRiskMembers.length} icon={<ShieldAlert className="w-5 h-5 text-yellow-500" />} onClick={() => navigate("/members?filter=At+Risk")} />
           <StatCard label="Inactive" value={inactiveMembers.length} icon={<AlertTriangle className="w-5 h-5 text-red-500" />} className={inactiveMembers.length > 0 ? "border-red-500/30" : ""} onClick={() => navigate("/members?filter=Inactive")} />
+        </div>
+      </div>
+
+      {/* ── Workout Categories ─────────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Workout Categories</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard label="Cardio Members" value={cardioMembers.length} icon={<Heart className="w-5 h-5 text-cyan-500" />} className="border-cyan-500/20 bg-cyan-500/5" onClick={() => navigate("/members?filter=Cardio")} />
+          <StatCard label="Strength Members" value={strengthMembers.length} icon={<Dumbbell className="w-5 h-5 text-purple-500" />} className="border-purple-500/20 bg-purple-500/5" onClick={() => navigate("/members?filter=Strengthening")} />
         </div>
       </div>
 
@@ -131,43 +142,6 @@ export default function Dashboard() {
           <StatCard label="Needs Reminder" value={reminderMembers.length} icon={<Bell className="w-5 h-5 text-amber-500" />} className={reminderMembers.length > 0 ? "border-amber-500/30 bg-amber-500/5" : ""} onClick={() => navigate("/members?filter=Needs+Reminder")} />
         </div>
       </div>
-
-      {/* ── Workout Categories ─────────────────────────────────────────────── */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Workout Categories</p>
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Cardio Members" value={cardioMembers.length} icon={<Heart className="w-5 h-5 text-pink-500" />} className="border-pink-500/20" onClick={() => navigate("/members?filter=Cardio")} />
-          <StatCard label="Strength Members" value={strengthMembers.length} icon={<Zap className="w-5 h-5 text-orange-500" />} className="border-orange-500/20" onClick={() => navigate("/members?filter=Strengthening")} />
-        </div>
-      </div>
-
-      {/* ── Payments ───────────────────────────────────────────────────────── */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Payments</p>
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Dues" value={duesMembers.length} icon={<AlertTriangle className="w-5 h-5 text-orange-500" />} className={duesMembers.length > 0 ? "border-orange-500/30" : ""} onClick={() => navigate("/members?filter=Dues")} />
-          <StatCard label="Overdue (10d+)" value={overdueMembers10.length} icon={<AlertTriangle className="w-5 h-5 text-red-600" />} className={overdueMembers10.length > 0 ? "border-red-600/40 bg-red-500/5" : ""} onClick={() => navigate("/members?filter=Overdue")} />
-        </div>
-      </div>
-
-      {/* ── Needs Attention list ────────────────────────────────────────────── */}
-      {overdueMembers.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">⚠ Needs Attention</h2>
-          <div className="space-y-2">
-            {overdueMembers.slice(0, 3).map((m) => <MemberCard key={m.id} member={m} navigateToPayment={true} />)}
-          </div>
-        </div>
-      )}
-
-      {dueSoonMembers.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Due Soon</h2>
-          <div className="space-y-2">
-            {dueSoonMembers.map((m) => <MemberCard key={m.id} member={m} />)}
-          </div>
-        </div>
-      )}
 
       {isLoading && (
         <div className="flex items-center justify-center py-12">

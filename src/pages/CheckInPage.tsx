@@ -3,9 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── localStorage keys ────────────────────────────────────────────────────────
-const KEY_MEMBER_ID = "saved_member_id";
-const KEY_MEMBER_NAME = "saved_member_name";
-const KEY_GYM_ID = "saved_gym_id";
+const KEY_MEMBER_ID = "member_id";
+const KEY_MEMBER_NAME = "member_name";
+const KEY_GYM_ID = "gym_id";
 
 // ─── Supabase helpers (replace Edge Function calls) ───────────────────────────
 
@@ -14,12 +14,12 @@ const KEY_GYM_ID = "saved_gym_id";
  * Queries members WHERE phone ends with last4 AND user_id = gymId.
  */
 async function identifyMember(
-  last4: string,
+  last5: string,
   gymId: string
 ): Promise<{ member_id: string; name: string }> {
   // DEBUG
   console.log("[identifyMember] gym_id:", gymId);
-  console.log("[identifyMember] last4:", last4);
+  console.log("[identifyMember] last5:", last5);
 
   // Fetch ALL members for this gym — strict filter client-side to avoid ilike false positives
   const { data, error } = await supabase
@@ -43,9 +43,9 @@ async function identifyMember(
 
   if (error) throw new Error(error.message);
 
-  // Strict last-4 match — ignores surrounding digits that ilike would wrongly include
+  // Strict last-5 match — ignores surrounding digits that ilike would wrongly include
   const match = (data ?? []).filter(
-    (m) => m.phone && String(m.phone).replace(/\D/g, "").slice(-4) === last4
+    (m) => m.phone && String(m.phone).replace(/\D/g, "").slice(-5) === last5
   );
 
   console.log("[identifyMember] matched members:", match);
@@ -68,20 +68,20 @@ async function checkInMember(
   // DEBUG
   console.log("[checkInMember] member_id:", memberId, "gym_id:", gymId);
 
-  // Check for existing check-in today (local midnight → UTC)
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-
+  // Fetch check-ins for the member
   const { data: existing, error: existErr } = await supabase
     .from("check_ins")
-    .select("id")
-    .eq("member_id", memberId)
-    .gte("checked_in_at", startOfDay.toISOString())
-    .limit(1);
+    .select("checked_in_at")
+    .eq("member_id", memberId);
 
   if (existErr) console.warn("[checkInMember] duplicate-check error:", existErr);
 
-  if (Array.isArray(existing) && existing.length > 0) {
+  const today = new Date().toDateString();
+  const alreadyChecked = (existing || []).some(c =>
+    new Date(c.checked_in_at).toDateString() === today
+  );
+
+  if (alreadyChecked) {
     console.log("[checkInMember] already checked in today");
     return { already_checked_in: true };
   }
@@ -146,6 +146,13 @@ export default function CheckInPage() {
 
   // ── On mount ─────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Disable PWA popup
+    const handler = (e: Event) => {
+      e.preventDefault();
+      return false;
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
     if (!gymId) { setPhase("no_gym"); return; }
 
     const savedId = localStorage.getItem(KEY_MEMBER_ID);
@@ -158,6 +165,8 @@ export default function CheckInPage() {
     } else {
       setPhase("pin_input");
     }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gymId]);
 
@@ -180,10 +189,10 @@ export default function CheckInPage() {
 
   // ── handlePinChange ───────────────────────────────────────────────────────
   function handlePinChange(val: string) {
-    const digits = val.replace(/\D/g, "").slice(0, 4);
+    const digits = val.replace(/\D/g, "").slice(0, 5);
     setPinError("");
     setPin(digits);
-    if (digits.length === 4) setTimeout(() => runIdentify(digits), 80);
+    if (digits.length === 5) setTimeout(() => runIdentify(digits), 80);
   }
 
   // ── runIdentify ───────────────────────────────────────────────────────────
@@ -253,7 +262,7 @@ export default function CheckInPage() {
 
           <div className="ci-gym-icon">🏋️</div>
 
-          <h1 className="ci-title">Enter last 4 digits</h1>
+          <h1 className="ci-title">Enter last 5 digits</h1>
           <p className="ci-sub">of your registered phone number</p>
 
           {/* Real input — triggers mobile numpad */}
@@ -262,7 +271,7 @@ export default function CheckInPage() {
             className="ci-pin-hidden"
             type="tel"
             inputMode="numeric"
-            maxLength={4}
+            maxLength={5}
             value={pin}
             onChange={(e) => handlePinChange(e.target.value)}
             autoComplete="off"
@@ -275,9 +284,9 @@ export default function CheckInPage() {
             role="button"
             tabIndex={0}
             aria-label="PIN entry"
-            onKeyDown={(e) => e.key === "Enter" && pin.length === 4 && runIdentify(pin)}
+            onKeyDown={(e) => e.key === "Enter" && pin.length === 5 && runIdentify(pin)}
           >
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 className={[
@@ -290,7 +299,7 @@ export default function CheckInPage() {
           </div>
 
           {pinError && <p className="ci-error-text">{pinError}</p>}
-          <p className="ci-hint-small">Auto-submits when 4 digits are entered</p>
+          <p className="ci-hint-small">Auto-submits when 5 digits are entered</p>
         </Centered>
       )}
 
@@ -339,7 +348,7 @@ export default function CheckInPage() {
         <Centered>
           <span className="ci-emoji">🔍</span>
           <h1 className="ci-title ci-red">Member not found</h1>
-          <p className="ci-sub">No member matched those 4 digits.<br />Please try again or contact the gym.</p>
+          <p className="ci-sub">No member matched those 5 digits.<br />Please try again or contact the gym.</p>
           <button className="ci-primary-btn" onClick={retry}>Try again</button>
         </Centered>
       )}
