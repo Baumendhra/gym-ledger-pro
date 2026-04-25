@@ -68,6 +68,10 @@ async function checkInMember(
   // DEBUG
   console.log("[checkInMember] member_id:", memberId, "gym_id:", gymId);
 
+  if (!memberId) {
+    throw new Error("Member not identified");
+  }
+
   // Fetch check-ins for the member
   const { data: existing, error: existErr } = await supabase
     .from("check_ins")
@@ -88,11 +92,16 @@ async function checkInMember(
 
   // 1. Insert check-in record
   const now = new Date().toISOString();
+  console.log("member_id:", memberId);
+  
   const { error: insertError } = await supabase
     .from("check_ins")
     .insert({ member_id: memberId, checked_in_at: now });
 
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) {
+    console.error("[checkInMember] insert error:", insertError);
+    throw new Error(insertError.message || "Failed to record check-in");
+  }
 
   // 2. Update last_visit_date — scoped to this gym for multi-gym safety
   console.log("[checkInMember] updating last_visit_date for:", memberId, "gym:", gymId);
