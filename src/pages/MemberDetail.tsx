@@ -93,13 +93,39 @@ export default function MemberDetail() {
         <Button
           variant="outline"
           className="px-3"
+          disabled={!member.phone}
+          onClick={() => {
+            const raw = String(member.phone).replace(/\D/g, "");
+            window.open(`tel:${raw}`);
+          }}
+          title="Call Member"
+        >
+          <Phone className="w-4 h-4 text-blue-600" />
+        </Button>
+        <Button
+          variant="outline"
+          className="px-3"
+          disabled={!member.phone}
           onClick={() => {
             const raw = String(member.phone).replace(/\D/g, "");
             const phone = raw.startsWith("91") ? raw : `91${raw}`;
-            const days = daysSinceVisit(member.last_visit_date);
-            const msg = member.needsReminder && days !== null
-              ? `Hi ${member.name}, we noticed you haven't visited the gym for ${days} day${days === 1 ? "" : "s"}. We'd love to see you back! 💪`
-              : `Hi ${member.name}, hope you're doing great! See you at the gym soon. 🏋️`;
+            const days = daysSinceVisit(member.last_visit_date) || 0;
+            
+            let statusFilter = "All";
+            if (member.paymentStatus === "overdue" || member.isOverdue10Days) statusFilter = "Overdues";
+            else if (member.hasDues) statusFilter = "Dues";
+            else if (member.finalStatus === "Inactive") statusFilter = "Inactive";
+            else if (member.finalStatus === "At Risk") statusFilter = "At Risk";
+            else if (member.finalStatus === "Active") statusFilter = "Active";
+
+            let msg = `Hi ${member.name}, we’d love to see you at the gym 💪`;
+            if (statusFilter === "Active") msg = `Great going ${member.name}! Keep it up 💯`;
+            else if (statusFilter === "At Risk") msg = `Hey ${member.name}, it’s been ${days} days — don’t lose your streak 🔥`;
+            else if (statusFilter === "Inactive") msg = `Hi ${member.name}, we miss you! It’s been ${days} days — come back 💪`;
+            else if (statusFilter === "Dues") msg = `Hi ${member.name}, your membership dues are pending. Kindly clear them 🙏`;
+            else if (statusFilter === "Overdues") msg = `${member.name}, your membership is overdue. Please renew to continue 💪`;
+            else if (statusFilter === "All") msg = `Hi ${member.name}, stay consistent with your workouts 💪`;
+
             window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
           }}
           title="Send WhatsApp Message"
