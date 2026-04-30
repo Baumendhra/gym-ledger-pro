@@ -79,6 +79,44 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_logs: {
+        Row: {
+          action_time: string | null
+          id: string
+          member_id: string
+          message: string
+          sent_at: string
+          status: string
+          type: string
+        }
+        Insert: {
+          action_time?: string | null
+          id?: string
+          member_id: string
+          message: string
+          sent_at?: string
+          status?: string
+          type: string
+        }
+        Update: {
+          action_time?: string | null
+          id?: string
+          member_id?: string
+          message?: string
+          sent_at?: string
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -140,6 +178,41 @@ export type Database = {
           owner_name?: string
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          member_id: string
+          p256dh: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          member_id: string
+          p256dh: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          member_id?: string
+          p256dh?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
