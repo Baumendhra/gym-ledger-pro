@@ -1,17 +1,3 @@
-// ============================================================
-// Supabase Edge Function: send-push
-// Sends a Web Push notification to a subscribed member.
-//
-// Environment secrets required (set via Supabase CLI):
-//   supabase secrets set VAPID_PUBLIC_KEY="..."
-//   supabase secrets set VAPID_PRIVATE_KEY="..."
-//   supabase secrets set VAPID_EMAIL="mailto:gym@example.com"
-//   supabase secrets set SUPABASE_SERVICE_KEY="..."  (auto-set)
-//
-// Deploy:
-//   supabase functions deploy send-push
-// ============================================================
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webPush from "npm:web-push@3.6.7";
 
@@ -21,20 +7,11 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-
   try {
-    // ── Parse request body ──────────────────────────────────
-    const {
-      subscription,   // { endpoint, keys: { p256dh, auth } }
-      title,          // notification title
-      body,           // notification body
-      data,           // { type, member_id, log_id, gym_phone }
-    } = await req.json();
-
+    const { subscription, title, body, data } = await req.json();
     if (!subscription?.endpoint || !title) {
       return new Response(
         JSON.stringify({ error: "Missing subscription or title" }),
@@ -42,14 +19,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── Configure web-push with VAPID keys ──────────────────
     const vapidPublicKey  = Deno.env.get("VAPID_PUBLIC_KEY")!;
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
     const vapidEmail      = Deno.env.get("VAPID_EMAIL") ?? "mailto:baumendhra@gmail.com";
 
     webPush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
 
-    // ── Build notification payload ──────────────────────────
     const notificationPayload = JSON.stringify({
       title,
       body,
@@ -58,7 +33,6 @@ Deno.serve(async (req: Request) => {
       data: data ?? {},
     });
 
-    // ── Send push ───────────────────────────────────────────
     await webPush.sendNotification(
       {
         endpoint: subscription.endpoint,
@@ -70,7 +44,6 @@ Deno.serve(async (req: Request) => {
       notificationPayload
     );
 
-    // ── Log the notification in DB (using service role) ─────
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -89,14 +62,10 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[send-push] Error:", message);
-
-    // 410 Gone = subscription is expired, caller should delete it
     const status = message.includes("410") ? 410 : 500;
-
     return new Response(
       JSON.stringify({ error: message }),
       { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
