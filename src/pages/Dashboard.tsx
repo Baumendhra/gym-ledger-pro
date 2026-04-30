@@ -26,7 +26,7 @@ export default function Dashboard() {
   const { data: checkIns = [] } = useCheckIns();
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const { alerts, loading: alertsLoading } = useAdminAlerts();
+  const { alerts, handledMemberIds, loading: alertsLoading } = useAdminAlerts();
 
   // Generate dynamic WhatsApp fallback
   const sendWhatsApp = (e: React.MouseEvent, phone: string, name: string, type: "at_risk" | "reminder") => {
@@ -85,6 +85,11 @@ export default function Dashboard() {
 
   const handleLogout = async () => { await signOut(); toast.success("Signed out"); };
 
+  // ── Unhandled Notifications for Dropdown ──────────────────────────────────
+  const unhandledAtRisk = atRiskMembers.filter(m => !handledMemberIds.has(m.id));
+  const unhandledReminder = reminderMembers.filter(m => !handledMemberIds.has(m.id));
+  const totalAlertCount = unhandledAtRisk.length + unhandledReminder.length + alerts.length;
+
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto space-y-6">
 
@@ -105,7 +110,7 @@ export default function Dashboard() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative" title="Notifications">
                 <BellRing className="w-5 h-5" />
-                {(atRiskMembers.length + reminderMembers.length + alerts.length) > 0 && (
+                {totalAlertCount > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 )}
               </Button>
@@ -114,11 +119,11 @@ export default function Dashboard() {
               <div className="px-3 py-2 text-sm font-semibold border-b flex items-center justify-between">
                 <span>⚠️ Member Attention Needed</span>
                 <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">
-                  {atRiskMembers.length + reminderMembers.length + alerts.length}
+                  {totalAlertCount}
                 </span>
               </div>
               
-              {atRiskMembers.map((m) => (
+              {unhandledAtRisk.map((m) => (
                 <DropdownMenuItem key={`atrisk-${m.id}`} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
                   <div className="flex items-center justify-between w-full">
                     <span className="font-medium text-amber-500 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> {m.name} added to At Risk list</span>
@@ -129,7 +134,7 @@ export default function Dashboard() {
                 </DropdownMenuItem>
               ))}
 
-              {reminderMembers.map((m) => (
+              {unhandledReminder.map((m) => (
                 <DropdownMenuItem key={`rem-${m.id}`} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
                   <div className="flex items-center justify-between w-full">
                     <span className="font-medium text-red-400 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {m.name} needs reminder</span>
@@ -156,7 +161,7 @@ export default function Dashboard() {
                 );
               })}
 
-              {(atRiskMembers.length + reminderMembers.length + alerts.length) === 0 && (
+              {totalAlertCount === 0 && (
                 <div className="py-6 text-center text-muted-foreground text-sm">
                   No alerts right now.
                 </div>

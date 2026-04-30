@@ -12,6 +12,7 @@ export interface AdminAlert {
 
 export function useAdminAlerts() {
   const [alerts, setAlerts] = useState<AdminAlert[]>([]);
+  const [handledMemberIds, setHandledMemberIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,12 +21,19 @@ export function useAdminAlerts() {
       const { data, error } = await supabase
         .from("notification_logs")
         .select("id, member_id, type, message, sent_at, status")
-        .or("status.eq.failed,type.in.(iphone_limitation,no_permission)")
         .order("sent_at", { ascending: false })
-        .limit(50);
+        .limit(200);
 
       if (!error && data) {
-        setAlerts(data as AdminAlert[]);
+        const failedAlerts = data.filter(
+          (a) => a.status === "failed" || ["iphone_limitation", "no_permission", "failed_push"].includes(a.type)
+        );
+        setAlerts(failedAlerts as AdminAlert[]);
+
+        const successful = data.filter(
+          (a) => a.status !== "failed" && !["iphone_limitation", "no_permission", "failed_push"].includes(a.type)
+        );
+        setHandledMemberIds(new Set(successful.map((a) => a.member_id)));
       }
       setLoading(false);
     }
@@ -51,5 +59,5 @@ export function useAdminAlerts() {
     };
   }, []);
 
-  return { alerts, loading };
+  return { alerts, handledMemberIds, loading };
 }
