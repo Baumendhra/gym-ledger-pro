@@ -100,6 +100,17 @@ export async function subscribeToPush(memberId: string): Promise<boolean> {
       return false;
     }
 
+    try {
+      const existingStr = localStorage.getItem("subscribed_members");
+      const existing = existingStr ? JSON.parse(existingStr) : [];
+      if (!existing.includes(memberId)) {
+        existing.push(memberId);
+        localStorage.setItem("subscribed_members", JSON.stringify(existing));
+      }
+    } catch (e) {
+      console.warn("[pushNotifications] Failed to track subscribed_members locally", e);
+    }
+
     console.log("[pushNotifications] ✅ Push subscription saved for member:", memberId);
     return true;
   } catch (err) {
@@ -126,18 +137,16 @@ export async function isSubscribed(memberId: string): Promise<boolean> {
  * Get the push subscription object from the DB for a member.
  * Returns null if not found.
  */
-async function getSubscription(memberId: string): Promise<{
+async function getSubscriptions(memberId: string): Promise<Array<{
   endpoint: string; p256dh: string; auth: string;
-} | null> {
+}>> {
   const { data, error } = await supabase
     .from("push_subscriptions")
     .select("endpoint, p256dh, auth")
-    .eq("member_id", memberId)
-    .limit(1)
-    .single();
+    .eq("member_id", memberId);
 
-  if (error || !data) return null;
-  return data as { endpoint: string; p256dh: string; auth: string };
+  if (error || !data) return [];
+  return data as Array<{ endpoint: string; p256dh: string; auth: string }>;
 }
 
 // ── Send Push ────────────────────────────────────────────────────────────────
@@ -177,9 +186,13 @@ export async function sendPushToMember(
     }
 
     // ── Get subscription ────────────────────────────────────
-    const sub = await getSubscription(memberId);
-    if (!sub) {
-      console.log(`[pushNotifications] No subscription for ${memberName} — skip`);
+    const subs = await getSubscriptions(memberId);
+    console.log("Sending to member:", memberId);
+    console.log("Subscriptions found:", subs.length);
+
+    if (subs.length === 0) {
+      console.log(`[pushNotifications] No subscription for member: ${memberId}`);
+      console.log("❌ No device for this member");
       return false;
     }
 
@@ -195,51 +208,73 @@ export async function sendPushToMember(
       body  = "We miss you! Come back strong 💪";
     }
 
+    let anySuccess = false;
+
     // ── Call Edge Function ──────────────────────────────────
-    const response = await fetch(SEND_PUSH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey":        supabaseAnonKey,
-        "Authorization": `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify({
-        subscription: {
-          endpoint: sub.endpoint,
-          keys:     { p256dh: sub.p256dh, auth: sub.auth },
+    for (const sub of subs) {
+      const response = await fetch(SEND_PUSH_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey":        supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
         },
-        title,
-        body,
-        data: {
-          type,
+        body: JSON.stringify({
+          subscription: {
+            endpoint: sub.endpoint,
+            keys:     { p256dh: sub.p256dh, auth: sub.auth },
+          },
+          title,
+          body,
+          data: {
+            type,
+            member_id: memberId,
+            gym_phone: GYM_PHONE,
+          },
+        }),
+      });
+
+      if (response.status === 410) {
+        // Subscription expired — remove from DB
+        await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("member_id", memberId)
+          .eq("endpoint", sub.endpoint);
+        console.warn("[pushNotifications] Removed expired subscription for", memberName);
+        continue;
+      }
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error("[pushNotifications] Edge Function error:", err);
+        await supabase.from("notification_logs").insert({
           member_id: memberId,
-          gym_phone: GYM_PHONE,
-        },
-      }),
-    });
+          type: "failed_push",
+          message: "Push not delivered: Edge function error",
+          status: "failed",
+        });
+        continue;
+      }
 
-    if (response.status === 410) {
-      // Subscription expired — remove from DB
-      await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("member_id", memberId)
-        .eq("endpoint", sub.endpoint);
-      console.warn("[pushNotifications] Removed expired subscription for", memberName);
-      return false;
+      anySuccess = true;
     }
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("[pushNotifications] Edge Function error:", err);
-      return false;
+    if (anySuccess) {
+      console.log(`[pushNotifications] ✅ Sent ${type} notification to ${memberName}`);
+      return true;
     }
-
-    console.log(`[pushNotifications] ✅ Sent ${type} notification to ${memberName}`);
-    return true;
+    
+    return false;
 
   } catch (err) {
     console.error("[pushNotifications] sendPushToMember error:", err);
+    await supabase.from("notification_logs").insert({
+      member_id: memberId,
+      type: "failed_push",
+      message: "Push not delivered: Network error",
+      status: "failed",
+    });
     return false;
   }
 }

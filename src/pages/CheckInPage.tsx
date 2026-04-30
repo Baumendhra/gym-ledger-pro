@@ -245,8 +245,41 @@ export default function CheckInPage() {
   // ── Show notification prompt after successful check-in (additive) ────────────
   useEffect(() => {
     if (phase === "success" || phase === "already_checked") {
+      const isIPhone = /iPhone/i.test(navigator.userAgent);
+      const savedId = localStorage.getItem(KEY_MEMBER_ID);
+
+      if (isIPhone) {
+        if (savedId) {
+          // Log iPhone limitation to admin
+          supabase.from("notification_logs").insert({
+            member_id: savedId,
+            type: "iphone_limitation",
+            message: "iPhone user detected - no push support",
+            status: "failed"
+          }).then();
+        }
+        return; // skip push prompt for iPhone
+      }
+
       if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
-        setShowNotifPrompt(true);
+        console.log("Permission not granted");
+        // Occasional retry: e.g. show once a day
+        const lastPromptDate = localStorage.getItem(`notif_prompt_${savedId}`);
+        const today = new Date().toDateString();
+
+        if (lastPromptDate !== today) {
+          setShowNotifPrompt(true);
+          localStorage.setItem(`notif_prompt_${savedId}`, today);
+          
+          if (savedId && Notification.permission === "denied") {
+            supabase.from("notification_logs").insert({
+              member_id: savedId,
+              type: "no_permission",
+              message: "Member has not enabled notifications",
+              status: "failed"
+            }).then();
+          }
+        }
       }
     } else {
       setShowNotifPrompt(false);
@@ -259,11 +292,21 @@ export default function CheckInPage() {
     setNotifLoading(true);
     try {
       const permission = await requestPermission();
+      const savedId = localStorage.getItem(KEY_MEMBER_ID);
+      
       if (permission === "granted") {
-        const savedId = localStorage.getItem(KEY_MEMBER_ID);
         if (savedId) await subscribeToPush(savedId);
         setNotifDone(true);
         setShowNotifPrompt(true);
+      } else if (savedId) {
+        console.log("Permission not granted");
+        await supabase.from("notification_logs").insert({
+          member_id: savedId,
+          type: "no_permission",
+          message: "Member has not enabled notifications",
+          status: "failed"
+        });
+        setShowNotifPrompt(false);
       }
     } finally {
       setNotifLoading(false);

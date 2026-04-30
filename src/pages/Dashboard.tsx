@@ -8,10 +8,12 @@ import {
   Users, AlertTriangle, Clock, Dumbbell,
   LogOut, Download, FileText, CalendarDays,
   Heart, Zap, TrendingUp, UserCheck, Bell, ShieldAlert,
+  BellRing, Smartphone, ShieldOff, MessageCircle, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAdminAlerts } from "@/hooks/useAdminAlerts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +26,19 @@ export default function Dashboard() {
   const { data: checkIns = [] } = useCheckIns();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const { alerts, loading: alertsLoading } = useAdminAlerts();
+
+  // Generate dynamic WhatsApp fallback
+  const sendWhatsApp = (e: React.MouseEvent, phone: string, name: string, type: "at_risk" | "reminder") => {
+    e.stopPropagation();
+    const raw = String(phone).replace(/\D/g, "");
+    const waPhone = raw.startsWith("91") ? raw : `91${raw}`;
+    const days = 5; // Placeholder or calculate if needed
+    let msg = type === "at_risk" 
+      ? `Hey ${name.split(" ")[0]} 👋 It’s been ${days} days — don’t lose your streak 💪`
+      : `Hi ${name.split(" ")[0]} 😔 We miss you! Come back strong 💪`;
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
 
   // ── Category counts ───────────────────────────────────────────────────────
   const cardioMembers = members.filter((m) => m.package_type === "cardio");
@@ -84,7 +99,71 @@ export default function Dashboard() {
             {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
+          {/* ── Admin Notification Center ── */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative" title="Notifications">
+                <BellRing className="w-5 h-5" />
+                {(atRiskMembers.length + reminderMembers.length + alerts.length) > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto">
+              <div className="px-3 py-2 text-sm font-semibold border-b flex items-center justify-between">
+                <span>⚠️ Member Attention Needed</span>
+                <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">
+                  {atRiskMembers.length + reminderMembers.length + alerts.length}
+                </span>
+              </div>
+              
+              {atRiskMembers.map((m) => (
+                <DropdownMenuItem key={`atrisk-${m.id}`} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-medium text-amber-500 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> {m.name} added to At Risk list</span>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.name, "at_risk")}>
+                    <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
+                  </Button>
+                </DropdownMenuItem>
+              ))}
+
+              {reminderMembers.map((m) => (
+                <DropdownMenuItem key={`rem-${m.id}`} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-medium text-red-400 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {m.name} needs reminder</span>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.name, "reminder")}>
+                    <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
+                  </Button>
+                </DropdownMenuItem>
+              ))}
+
+              {alerts.map((a) => {
+                const m = members.find(x => x.id === a.member_id);
+                if (!m) return null;
+                return (
+                  <DropdownMenuItem key={a.id} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer border-t border-border/50">
+                    <div className="flex items-center gap-1.5 font-medium text-muted-foreground w-full">
+                      {a.type === "failed_push" && <XCircle className="w-3.5 h-3.5 text-red-500" />}
+                      {a.type === "iphone_limitation" && <Smartphone className="w-3.5 h-3.5 text-blue-400" />}
+                      {a.type === "no_permission" && <ShieldOff className="w-3.5 h-3.5 text-yellow-500" />}
+                      <span className="truncate">{m.name}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{a.message}</span>
+                  </DropdownMenuItem>
+                );
+              })}
+
+              {(atRiskMembers.length + reminderMembers.length + alerts.length) === 0 && (
+                <div className="py-6 text-center text-muted-foreground text-sm">
+                  No alerts right now.
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" title="Download Reports">
