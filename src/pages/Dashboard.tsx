@@ -32,6 +32,16 @@ export default function Dashboard() {
   const sendWhatsApp = async (e: React.MouseEvent, phone: string, memberId: string, name: string, type: "at_risk" | "reminder") => {
     e.stopPropagation();
 
+    const raw = String(phone).replace(/\D/g, "");
+    const waPhone = raw.startsWith("91") ? raw : `91${raw}`;
+    const days = 5; // Placeholder or calculate if needed
+    let msg = type === "at_risk" 
+      ? `Hey ${name.split(" ")[0]} 👋 It’s been ${days} days — don’t lose your streak 💪`
+      : `Hi ${name.split(" ")[0]} 😔 We miss you! Come back strong 💪`;
+    
+    // Open synchronously to prevent browser popup blockers
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+
     // Log the manual fallback to dismiss the alert from the Admin Notification Center
     await supabase.from("notification_logs").insert({
       member_id: memberId,
@@ -39,14 +49,6 @@ export default function Dashboard() {
       message: "Handled manually via WhatsApp",
       status: "fallback"
     });
-
-    const raw = String(phone).replace(/\D/g, "");
-    const waPhone = raw.startsWith("91") ? raw : `91${raw}`;
-    const days = 5; // Placeholder or calculate if needed
-    let msg = type === "at_risk" 
-      ? `Hey ${name.split(" ")[0]} 👋 It’s been ${days} days — don’t lose your streak 💪`
-      : `Hi ${name.split(" ")[0]} 😔 We miss you! Come back strong 💪`;
-    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   // ── Category counts ───────────────────────────────────────────────────────
@@ -133,7 +135,7 @@ export default function Dashboard() {
               </div>
               
               {unhandledAtRisk.map((m) => (
-                <DropdownMenuItem key={`atrisk-${m.id}`} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                <DropdownMenuItem key={`atrisk-${m.id}`} onClick={() => navigate(`/member/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
                   <div className="flex items-center justify-between w-full">
                     <span className="font-medium text-amber-500 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> {m.name} added to At Risk list</span>
                   </div>
@@ -144,7 +146,7 @@ export default function Dashboard() {
               ))}
 
               {unhandledReminder.map((m) => (
-                <DropdownMenuItem key={`rem-${m.id}`} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                <DropdownMenuItem key={`rem-${m.id}`} onClick={() => navigate(`/member/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
                   <div className="flex items-center justify-between w-full">
                     <span className="font-medium text-red-400 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {m.name} needs reminder</span>
                   </div>
@@ -158,7 +160,7 @@ export default function Dashboard() {
                 const m = members.find(x => x.id === a.member_id);
                 if (!m) return null;
                 return (
-                  <DropdownMenuItem key={a.id} onClick={() => navigate(`/members/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer border-t border-border/50">
+                  <DropdownMenuItem key={a.id} onClick={() => navigate(`/member/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer border-t border-border/50">
                     <div className="flex items-center gap-1.5 font-medium text-muted-foreground w-full">
                       {a.type === "failed_push" && <XCircle className="w-3.5 h-3.5 text-red-500" />}
                       {a.type === "iphone_limitation" && <Smartphone className="w-3.5 h-3.5 text-blue-400" />}

@@ -50,11 +50,9 @@ export function useNotificationTrigger(
 
       // ── At Risk members → "don't lose your streak" ──────
       // These have finalStatus === "At Risk" (7-10 days inactive)
-      for (const member of atRiskMembers) {
-        await sendPushToMember(member.id, member.name, "at_risk", ANON_KEY);
-        // Small delay to avoid hammering the Edge Function
-        await new Promise((r) => setTimeout(r, 300));
-      }
+      const atRiskPromises = atRiskMembers.map(member => 
+        sendPushToMember(member.id, member.name, "at_risk", ANON_KEY)
+      );
 
       // ── Reminder members who are INACTIVE (not just At Risk) ──
       // reminderMembers includes At Risk too (needsReminder=true for 7+)
@@ -63,10 +61,12 @@ export function useNotificationTrigger(
         (m) => m.finalStatus === "Inactive"
       );
 
-      for (const member of inactiveReminders) {
-        await sendPushToMember(member.id, member.name, "reminder", ANON_KEY);
-        await new Promise((r) => setTimeout(r, 300));
-      }
+      const reminderPromises = inactiveReminders.map(member =>
+        sendPushToMember(member.id, member.name, "reminder", ANON_KEY)
+      );
+
+      // Execute all push requests concurrently
+      await Promise.all([...atRiskPromises, ...reminderPromises]);
 
       console.log("[useNotificationTrigger] ✅ Notification trigger cycle complete");
     })();
