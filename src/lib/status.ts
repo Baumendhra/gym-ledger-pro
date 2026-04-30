@@ -32,11 +32,11 @@ function attendanceStatus(
   if (days === null) {
     return { finalStatus: "New", needsReminder: false, inactiveReason: null };
   }
-  if (days <= 6) {
+  if (days <= 4) {
     return { finalStatus: "Active", needsReminder: false, inactiveReason: null };
   }
-  if (days <= 10) {
-    return { finalStatus: "At Risk", needsReminder: true, inactiveReason: `No visit for ${days} days` };
+  if (days >=5 && days <= 6) {
+    return { finalStatus: "At Risk", needsReminder: false, inactiveReason: null };
   }
   return { finalStatus: "Inactive", needsReminder: true, inactiveReason: `Inactive for ${days} days` };
 }
