@@ -18,19 +18,31 @@ export function useAdminAlerts() {
   useEffect(() => {
     async function fetchAlerts() {
       setLoading(true);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
       const { data, error } = await supabase
         .from("notification_logs")
         .select("id, member_id, type, message, sent_at, status")
-        .order("sent_at", { ascending: false })
-        .limit(200);
+        .gte("sent_at", todayStart.toISOString())
+        .order("sent_at", { ascending: false });
 
       if (!error && data) {
-        const failedAlerts = data.filter(
+        const latestLogsMap = new Map<string, AdminAlert>();
+        data.forEach(log => {
+          if (!latestLogsMap.has(log.member_id)) {
+            latestLogsMap.set(log.member_id, log as AdminAlert);
+          }
+        });
+
+        const latestLogs = Array.from(latestLogsMap.values());
+
+        const failedAlerts = latestLogs.filter(
           (a) => a.status === "failed" || ["iphone_limitation", "no_permission", "failed_push"].includes(a.type)
         );
-        setAlerts(failedAlerts as AdminAlert[]);
+        setAlerts(failedAlerts);
 
-        const successful = data.filter(
+        const successful = latestLogs.filter(
           (a) => a.status !== "failed" && !["iphone_limitation", "no_permission", "failed_push"].includes(a.type)
         );
         setHandledMemberIds(new Set(successful.map((a) => a.member_id)));

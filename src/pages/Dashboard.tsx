@@ -29,8 +29,17 @@ export default function Dashboard() {
   const { alerts, handledMemberIds, loading: alertsLoading } = useAdminAlerts();
 
   // Generate dynamic WhatsApp fallback
-  const sendWhatsApp = (e: React.MouseEvent, phone: string, name: string, type: "at_risk" | "reminder") => {
+  const sendWhatsApp = async (e: React.MouseEvent, phone: string, memberId: string, name: string, type: "at_risk" | "reminder") => {
     e.stopPropagation();
+
+    // Log the manual fallback to dismiss the alert from the Admin Notification Center
+    await supabase.from("notification_logs").insert({
+      member_id: memberId,
+      type: "whatsapp_fallback",
+      message: "Handled manually via WhatsApp",
+      status: "fallback"
+    });
+
     const raw = String(phone).replace(/\D/g, "");
     const waPhone = raw.startsWith("91") ? raw : `91${raw}`;
     const days = 5; // Placeholder or calculate if needed
@@ -128,7 +137,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between w-full">
                     <span className="font-medium text-amber-500 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> {m.name} added to At Risk list</span>
                   </div>
-                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.name, "at_risk")}>
+                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.id, m.name, "at_risk")}>
                     <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
                   </Button>
                 </DropdownMenuItem>
@@ -139,7 +148,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between w-full">
                     <span className="font-medium text-red-400 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {m.name} needs reminder</span>
                   </div>
-                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.name, "reminder")}>
+                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.id, m.name, "reminder")}>
                     <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
                   </Button>
                 </DropdownMenuItem>
@@ -157,6 +166,9 @@ export default function Dashboard() {
                       <span className="truncate">{m.name}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">{a.message}</span>
+                    <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.id, m.name, "at_risk")}>
+                      <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
+                    </Button>
                   </DropdownMenuItem>
                 );
               })}
