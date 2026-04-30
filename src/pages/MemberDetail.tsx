@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMembers, usePayments, useDeleteMember, useCheckIns } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatCurrency, daysSinceVisit, formatVisitAge } from "@/lib/status";
 import { exportPaymentsCSV, exportMemberAttendanceCSV } from "@/lib/export";
-import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck } from "lucide-react";
+import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PLAN_CONFIG } from "@/types";
+import { getMemberNotificationLogs, handleNotificationAction, type NotificationLog } from "@/services/pushNotifications";
 
 export default function MemberDetail() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,31 @@ export default function MemberDetail() {
   const member = members.find((m) => m.id === id);
   // Filter check_ins to only this member's records
   const memberCheckIns = allCheckIns.filter((c) => c.member_id === id);
+
+  // ── Notification Activity (additive layer) ────────────────────────────────────
+  const [notifLogs, setNotifLogs] = useState<NotificationLog[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    setNotifLoading(true);
+    getMemberNotificationLogs(id)
+      .then(setNotifLogs)
+      .finally(() => setNotifLoading(false));
+  }, [id]);
+
+  // Listen for SW messages when member clicks a notification button
+  useEffect(() => {
+    function handleSWMessage(event: MessageEvent) {
+      const msg = event.data;
+      if (msg?.type === "pn-action" && msg.memberId === id) {
+        handleNotificationAction(msg.memberId, msg.notifType, msg.status)
+          .then(() => getMemberNotificationLogs(id!).then(setNotifLogs));
+      }
+    }
+    navigator.serviceWorker?.addEventListener("message", handleSWMessage);
+    return () => navigator.serviceWorker?.removeEventListener("message", handleSWMessage);
+  }, [id]);
 
   function handleDeleteConfirm() {
     if (!id) return;
@@ -174,6 +200,55 @@ export default function MemberDetail() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Notification Activity (additive section) ──────────────────────────── */}
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <Bell className="w-3.5 h-3.5" /> Notification Activity
+        </h2>
+        {notifLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
+          </div>
+        ) : notifLogs.length === 0 ? (
+          <p className="text-center text-muted-foreground py-4 text-sm">
+            No notifications sent yet
+          </p>
+        ) : (
+          <div className="space-y-1.5">
+            {notifLogs.map((log) => {
+              const sentDate = new Date(log.sent_at);
+              const dayLabel = sentDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+              const statusEmoji: Record<string, string> = {
+                sent:    "❌",
+                coming:  "💪 Coming",
+                later:   "⏰ Later",
+                restart: "💪 Restarting",
+                called:  "📞 Called",
+              };
+              const typeLabel = log.type === "at_risk" ? "⚡ At Risk" : "🔔 Reminder";
+              const statusLabel = statusEmoji[log.status] ?? log.status;
+              return (
+                <div
+                  key={log.id}
+                  className="glass-card rounded-lg px-3 py-2.5 flex items-center gap-3 text-sm"
+                >
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Bell className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs">{dayLabel} — {typeLabel}</p>
+                    <p className="text-xs text-muted-foreground truncate">{log.message}</p>
+                  </div>
+                  <span className="text-xs font-medium whitespace-nowrap">
+                    {log.status === "sent" && !log.action_time ? "❌ No response" : statusLabel}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

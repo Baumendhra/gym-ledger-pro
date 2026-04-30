@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { requestPermission, subscribeToPush } from "@/services/pushNotifications";
 
 // ─── localStorage keys ────────────────────────────────────────────────────────
 const KEY_MEMBER_ID = "member_id";
@@ -153,6 +154,11 @@ export default function CheckInPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const pinRef = useRef<HTMLInputElement>(null);
 
+  // ── Notification prompt state (additive — no existing logic touched) ──────────
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifDone, setNotifDone] = useState(false);
+
   // ── On mount ─────────────────────────────────────────────────────────────
   useEffect(() => {
     // Disable PWA popup
@@ -235,6 +241,34 @@ export default function CheckInPage() {
   }
 
   function retry() { setPin(""); setPinError(""); setErrorMsg(""); setPhase("pin_input"); }
+
+  // ── Show notification prompt after successful check-in (additive) ────────────
+  useEffect(() => {
+    if (phase === "success" || phase === "already_checked") {
+      if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+        setShowNotifPrompt(true);
+      }
+    } else {
+      setShowNotifPrompt(false);
+      setNotifDone(false);
+    }
+  }, [phase]);
+
+  // ── Handle "Enable Notifications" click (additive) ───────────────────────────
+  async function handleEnableNotifications() {
+    setNotifLoading(true);
+    try {
+      const permission = await requestPermission();
+      if (permission === "granted") {
+        const savedId = localStorage.getItem(KEY_MEMBER_ID);
+        if (savedId) await subscribeToPush(savedId);
+        setNotifDone(true);
+        setShowNotifPrompt(true);
+      }
+    } finally {
+      setNotifLoading(false);
+    }
+  }
 
   const isSpinning = phase === "loading" || phase === "identifying" || phase === "checking_in";
 
@@ -339,6 +373,32 @@ export default function CheckInPage() {
             Not you? Change user
           </button>
         </Centered>
+      )}
+
+      {/* ── NOTIFICATION PROMPT (additive — shown after success/already_checked) ── */}
+      {showNotifPrompt && !notifDone && (
+        <div className="ci-notif-prompt">
+          <div className="ci-notif-prompt-inner">
+            <span className="ci-notif-bell">🔔</span>
+            <p className="ci-notif-text">Enable notifications to get workout reminders</p>
+            <button
+              className="ci-notif-btn"
+              onClick={handleEnableNotifications}
+              disabled={notifLoading}
+            >
+              {notifLoading ? "Enabling…" : "Enable Notifications"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showNotifPrompt && notifDone && (
+        <div className="ci-notif-prompt">
+          <div className="ci-notif-prompt-inner">
+            <span className="ci-notif-bell">✅</span>
+            <p className="ci-notif-text">Notifications enabled! You'll get reminders if you skip a few days.</p>
+          </div>
+        </div>
       )}
 
       {/* ALREADY CHECKED */}
@@ -582,6 +642,54 @@ export default function CheckInPage() {
           transform: scale(1.03);
           box-shadow: 0 8px 28px rgba(59,130,246,0.45);
         }
+
+        /* ── Notification Prompt (additive) ────────────────────────────── */
+        .ci-notif-prompt {
+          position: fixed;
+          bottom: 1.5rem;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 50;
+          width: calc(100% - 3rem);
+          max-width: 380px;
+          animation: ci-fade 0.35s ease;
+        }
+        .ci-notif-prompt-inner {
+          background: rgba(30,30,60,0.92);
+          border: 1px solid rgba(99,102,241,0.35);
+          border-radius: 1.1rem;
+          padding: 1rem 1.25rem;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15);
+        }
+        .ci-notif-bell {
+          font-size: 1.3rem;
+          flex-shrink: 0;
+        }
+        .ci-notif-text {
+          font-size: 0.82rem;
+          color: rgba(255,255,255,0.75);
+          flex: 1;
+          line-height: 1.4;
+        }
+        .ci-notif-btn {
+          flex-shrink: 0;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          color: #fff;
+          border: none;
+          border-radius: 999px;
+          padding: 0.42rem 0.9rem;
+          font-size: 0.78rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.15s, transform 0.15s;
+          white-space: nowrap;
+        }
+        .ci-notif-btn:hover { opacity: 0.88; transform: scale(1.03); }
+        .ci-notif-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
       `}</style>
     </div>
   );

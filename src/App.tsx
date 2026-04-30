@@ -13,11 +13,28 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import AuthPage from "@/pages/AuthPage";
 import CheckInPage from "@/pages/CheckInPage";
 import NotFound from "@/pages/NotFound";
+import { useEffect } from "react";
+import { handleNotificationAction } from "@/services/pushNotifications";
 
 const queryClient = new QueryClient();
 
+/** Global listener: routes SW 'pn-action' messages to DB update */
+function useSWNotificationListener() {
+  useEffect(() => {
+    function handleMsg(event: MessageEvent) {
+      const msg = event.data;
+      if (msg?.type === "pn-action" && msg.memberId && msg.notifType && msg.status) {
+        handleNotificationAction(msg.memberId, msg.notifType, msg.status);
+      }
+    }
+    navigator.serviceWorker?.addEventListener("message", handleMsg);
+    return () => navigator.serviceWorker?.removeEventListener("message", handleMsg);
+  }, []);
+}
+
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
+  useSWNotificationListener();
 
   if (loading) {
     return (

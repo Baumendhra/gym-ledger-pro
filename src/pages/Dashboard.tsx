@@ -1,4 +1,5 @@
 import { useMembers, useCheckIns } from "@/hooks/useMembers";
+import { useNotificationTrigger } from "@/hooks/useNotificationTrigger";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/StatCard";
 import { MemberCard } from "@/components/MemberCard";
@@ -34,6 +35,9 @@ export default function Dashboard() {
   const inactiveMembers = members.filter((m) => m.finalStatus === "Inactive");
   const newMembers = members.filter((m) => m.finalStatus === "New");
   const reminderMembers = members.filter((m) => m.needsReminder);
+
+  // ── Auto push notifications (additive layer — no existing logic changed) ──
+  useNotificationTrigger(atRiskMembers, reminderMembers);
 
   // ── Payment counts ────────────────────────────────────────────────────────
   const overdueMembers = members.filter((m) => m.paymentStatus === "overdue");
