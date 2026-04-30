@@ -15,12 +15,12 @@ const KEY_GYM_ID = "gym_id";
  * Queries members WHERE phone ends with last4 AND user_id = gymId.
  */
 async function identifyMember(
-  last5: string,
+  first5: string,
   gymId: string
-): Promise<{ member_id: string; name: string }> {
+): Promise<Array<{ member_id: string; name: string }>> {
   // DEBUG
   console.log("[identifyMember] gym_id:", gymId);
-  console.log("[identifyMember] last5:", last5);
+  console.log("[identifyMember] first5:", first5);
 
   // Fetch ALL members for this gym — strict filter client-side to avoid ilike false positives
   const { data, error } = await supabase
@@ -44,17 +44,15 @@ async function identifyMember(
 
   if (error) throw new Error(error.message);
 
-  // Strict last-5 match — ignores surrounding digits that ilike would wrongly include
   const match = (data ?? []).filter(
-    (m) => m.phone && String(m.phone).replace(/\D/g, "").slice(-5) === last5
+    (m) => m.phone && String(m.phone).replace(/\D/g, "").slice(0, 5) === first5
   );
 
   console.log("[identifyMember] matched members:", match);
 
   if (match.length === 0) throw new IdentifyError("not_found");
-  if (match.length > 1)  throw new IdentifyError("multiple_match");
 
-  return { member_id: match[0].id, name: match[0].name };
+  return match.map(m => ({ member_id: m.id, name: m.name }));
 }
 
 
@@ -152,6 +150,7 @@ export default function CheckInPage() {
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [matchedMembers, setMatchedMembers] = useState<Array<{ member_id: string; name: string }>>([]);
   const pinRef = useRef<HTMLInputElement>(null);
 
   // ── Notification prompt state (additive — no existing logic touched) ──────────
@@ -214,12 +213,18 @@ export default function CheckInPage() {
   async function runIdentify(digits: string) {
     setPhase("identifying");
     try {
-      const res = await identifyMember(digits, gymId);
-      localStorage.setItem(KEY_MEMBER_ID, res.member_id);
-      localStorage.setItem(KEY_MEMBER_NAME, res.name);
-      localStorage.setItem(KEY_GYM_ID, gymId);
-      setMemberName(res.name);
-      await runCheckIn(res.member_id, gymId);
+      const matches = await identifyMember(digits, gymId);
+      if (matches.length === 1) {
+        const res = matches[0];
+        localStorage.setItem(KEY_MEMBER_ID, res.member_id);
+        localStorage.setItem(KEY_MEMBER_NAME, res.name);
+        localStorage.setItem(KEY_GYM_ID, gymId);
+        setMemberName(res.name);
+        await runCheckIn(res.member_id, gymId);
+      } else {
+        setMatchedMembers(matches);
+        setPhase("multiple_match");
+      }
     } catch (err) {
       if (err instanceof IdentifyError) {
         setPhase(err.kind);
@@ -229,6 +234,15 @@ export default function CheckInPage() {
       }
       setPin("");
     }
+  }
+
+  // ── handleSelectMatch ─────────────────────────────────────────────────────
+  async function handleSelectMatch(res: { member_id: string; name: string }) {
+    localStorage.setItem(KEY_MEMBER_ID, res.member_id);
+    localStorage.setItem(KEY_MEMBER_NAME, res.name);
+    localStorage.setItem(KEY_GYM_ID, gymId);
+    setMemberName(res.name);
+    await runCheckIn(res.member_id, gymId);
   }
 
   // ── handleReset ───────────────────────────────────────────────────────────
@@ -348,7 +362,7 @@ export default function CheckInPage() {
 
           <div className="ci-gym-icon">🏋️</div>
 
-          <h1 className="ci-title">Enter last 5 digits</h1>
+          <h1 className="ci-title">Enter first 5 digits</h1>
           <p className="ci-sub">of your registered phone number</p>
 
           {/* Real input — triggers mobile numpad */}
@@ -468,10 +482,23 @@ export default function CheckInPage() {
       {/* MULTIPLE MATCH */}
       {phase === "multiple_match" && (
         <Centered>
-          <span className="ci-emoji">👥</span>
-          <h1 className="ci-title ci-amber">Multiple matches</h1>
-          <p className="ci-sub">More than one member shares those digits.<br />Please contact the gym reception.</p>
-          <button className="ci-ghost-btn" onClick={retry}>← Try again</button>
+          <div className="ci-logo-pill">
+            <div className="ci-logo-dot" />
+            <span className="ci-logo-text">Select your name</span>
+          </div>
+          <div className="flex flex-col gap-3 mt-6 w-full max-w-[280px]">
+            {matchedMembers.map(m => (
+              <button 
+                key={m.member_id}
+                className="ci-primary-btn"
+                style={{ marginTop: 0 }}
+                onClick={() => handleSelectMatch(m)}
+              >
+                {m.name}
+              </button>
+            ))}
+          </div>
+          <button className="ci-ghost-btn" onClick={retry}>← Cancel</button>
         </Centered>
       )}
 
