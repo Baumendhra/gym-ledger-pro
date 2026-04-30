@@ -1,4 +1,5 @@
 import { useMembers, useCheckIns } from "@/hooks/useMembers";
+import { supabase } from "@/integrations/supabase/client";
 import { useNotificationTrigger } from "@/hooks/useNotificationTrigger";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/StatCard";
