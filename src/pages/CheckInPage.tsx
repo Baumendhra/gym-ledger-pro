@@ -56,6 +56,18 @@ async function identifyMember(
 }
 
 
+/** Returns true if the given ISO timestamp is today (local time). */
+function isToday(iso: string | null): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
 /**
  * POST /checkin equivalent.
  * Checks last_visit_date on the member row. Returns already_checked_in=true if visited today.
