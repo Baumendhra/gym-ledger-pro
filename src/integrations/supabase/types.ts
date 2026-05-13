@@ -14,32 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      check_ins: {
-        Row: {
-          checked_in_at: string
-          id: string
-          member_id: string
-        }
-        Insert: {
-          checked_in_at?: string
-          id?: string
-          member_id: string
-        }
-        Update: {
-          checked_in_at?: string
-          id?: string
-          member_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "check_ins_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       members: {
         Row: {
           created_at: string
@@ -49,6 +23,7 @@ export type Database = {
           membership_plan: string
           name: string
           next_due_date: string | null
+          notes: string | null
           package_type: string | null
           phone: string
           user_id: string
@@ -61,6 +36,7 @@ export type Database = {
           membership_plan?: string
           name: string
           next_due_date?: string | null
+          notes?: string | null
           package_type?: string | null
           phone: string
           user_id: string
@@ -73,6 +49,7 @@ export type Database = {
           membership_plan?: string
           name?: string
           next_due_date?: string | null
+          notes?: string | null
           package_type?: string | null
           phone?: string
           user_id?: string
