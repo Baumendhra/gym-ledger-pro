@@ -16,14 +16,29 @@ export function useCheckIns() {
   return useQuery<CheckInRow[]>({
     queryKey: ["check_ins", user?.id],
     enabled: !!user?.id,
-    staleTime: 60_000, // refresh every minute
+    staleTime: 0, // always fetch fresh so today's count is accurate
     queryFn: async () => {
-      // Pull check_ins joined with members to scope to this gym
+      // Step 1: Get all member IDs belonging to this gym owner
+      const { data: gymMembers, error: membersError } = await supabase
+        .from("members")
+        .select("id")
+        .eq("user_id", user!.id);
+      if (membersError) throw membersError;
+
+      const memberIds = (gymMembers || []).map((m: any) => m.id);
+      if (memberIds.length === 0) return [];
+
+      // Step 2: Fetch today's check-ins for those members only
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
       const { data, error } = await supabase
         .from("check_ins")
-        .select("id, member_id, checked_in_at, members!inner(user_id)")
-        .eq("members.user_id", user!.id);
+        .select("id, member_id, checked_in_at")
+        .in("member_id", memberIds)
+        .gte("checked_in_at", todayStart.toISOString());
       if (error) throw error;
+
       return (data as any[]).map((r) => ({
         id: r.id,
         member_id: r.member_id,

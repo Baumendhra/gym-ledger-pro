@@ -73,25 +73,9 @@ export default function Dashboard() {
   const overdueMembers10 = members.filter((m) => m.isOverdue10Days);
 
   // ── Attendance calculations ────────────────────────────────────────────────
-  const todayStr = new Date().toDateString();
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-
-  const uniqueToday = new Set(
-    checkIns
-      .filter((c) => {
-        try { return new Date(c.checked_in_at).toDateString() === todayStr; } catch { return false; }
-      })
-      .map(c => c.member_id)
-  );
-  const todayAttendance = uniqueToday.size;
-
-  const monthlyAttendance = checkIns.filter((c) => {
-    try {
-      const d = new Date(c.checked_in_at);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    } catch { return false; }
-  }).length;
+  // useCheckIns() now only returns today's check-ins (filtered at DB level),
+  // so we just deduplicate by member_id to get the unique count.
+  const todayAttendance = new Set(checkIns.map(c => c.member_id)).size;
 
   const monthName = new Date().toLocaleDateString("en-IN", { month: "long" });
 
