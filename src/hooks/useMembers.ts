@@ -4,58 +4,13 @@ import { getMemberStatus } from "@/lib/status";
 import { useAuth } from "@/hooks/useAuth";
 import { type Member, type Payment, type MembershipPlan, type PackageType, PLAN_CONFIG } from "@/types";
 
-export interface CheckInRow {
-  id: string;
-  member_id: string;
-  checked_in_at: string;
-}
-
-/** Fetches all check_ins for members belonging to the current gym (user_id). */
-export function useCheckIns() {
-  const { user } = useAuth();
-  return useQuery<CheckInRow[]>({
-    queryKey: ["check_ins", user?.id],
-    enabled: !!user?.id,
-    staleTime: 0, // always fetch fresh so today's count is accurate
-    queryFn: async () => {
-      // Step 1: Get all member IDs belonging to this gym owner
-      const { data: gymMembers, error: membersError } = await supabase
-        .from("members")
-        .select("id")
-        .eq("user_id", user!.id);
-      if (membersError) throw membersError;
-
-      const memberIds = (gymMembers || []).map((m: any) => m.id);
-      if (memberIds.length === 0) return [];
-
-      // Step 2: Fetch today's check-ins for those members only
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from("check_ins")
-        .select("id, member_id, checked_in_at")
-        .in("member_id", memberIds)
-        .gte("checked_in_at", todayStart.toISOString());
-      if (error) throw error;
-
-      return (data as any[]).map((r) => ({
-        id: r.id,
-        member_id: r.member_id,
-        checked_in_at: r.checked_in_at,
-      }));
-    },
-  });
-}
-
-
 export function useMembers() {
   return useQuery({
     queryKey: ["members"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("*, check_ins(count)")
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as any[]).map(getMemberStatus);

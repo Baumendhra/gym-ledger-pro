@@ -59,13 +59,8 @@ export function getMemberStatus(member: any): MemberWithStatus {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const memberAny = member as any;
-  let totalCheckins = 0;
-  if (Array.isArray(memberAny.check_ins) && memberAny.check_ins.length > 0) {
-    totalCheckins = memberAny.check_ins[0]?.count || 0;
-  } else if (typeof memberAny.check_ins === "number") {
-    totalCheckins = memberAny.check_ins;
-  }
+  // totalCheckins: check_ins table no longer queried; attendance tracked via last_visit_date only
+  const totalCheckins = 0;
 
   const diffMs   = dueDate ? dueDate.getTime() - today.getTime() : null;
   const diffDays = diffMs !== null ? Math.ceil(diffMs / (1000 * 60 * 60 * 24)) : null;

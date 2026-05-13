@@ -1,4 +1,4 @@
-import { useMembers, useCheckIns } from "@/hooks/useMembers";
+import { useMembers } from "@/hooks/useMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotificationTrigger } from "@/hooks/useNotificationTrigger";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +24,7 @@ import {
 
 export default function Dashboard() {
   const { data: members = [], isLoading } = useMembers();
-  const { data: checkIns = [] } = useCheckIns();
+
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { alerts, handledMemberIds, loading: alertsLoading } = useAdminAlerts();
@@ -36,10 +36,10 @@ export default function Dashboard() {
     const raw = String(phone).replace(/\D/g, "");
     const waPhone = raw.startsWith("91") ? raw : `91${raw}`;
     const days = 5; // Placeholder or calculate if needed
-    let msg = type === "at_risk" 
+    let msg = type === "at_risk"
       ? `Hey ${name.split(" ")[0]} 👋 It’s been ${days} days — don’t lose your streak 💪`
       : `Hi ${name.split(" ")[0]} 😔 We miss you! Come back strong 💪`;
-    
+
     // Open synchronously to prevent browser popup blockers
     window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, "_blank");
 
@@ -73,9 +73,11 @@ export default function Dashboard() {
   const overdueMembers10 = members.filter((m) => m.isOverdue10Days);
 
   // ── Attendance calculations ────────────────────────────────────────────────
-  // useCheckIns() now only returns today's check-ins (filtered at DB level),
-  // so we just deduplicate by member_id to get the unique count.
-  const todayAttendance = new Set(checkIns.map(c => c.member_id)).size;
+  // Derived directly from members.last_visit_date — no check_ins table needed.
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayAttendance = members.filter(
+    (m) => m.last_visit_date && m.last_visit_date.slice(0, 10) === todayStr
+  ).length;
 
   const monthName = new Date().toLocaleDateString("en-IN", { month: "long" });
 
@@ -118,7 +120,7 @@ export default function Dashboard() {
                   {totalAlertCount}
                 </span>
               </div>
-              
+
               {unhandledAtRisk.map((m) => (
                 <DropdownMenuItem key={`atrisk-${m.id}`} onClick={() => navigate(`/member/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
                   <div className="flex items-center justify-between w-full">
