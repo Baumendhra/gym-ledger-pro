@@ -141,16 +141,20 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
           {/* Note preview — only for At Risk / Inactive / Reminder */}
           {needsNoteSection && !noteOpen && (
             <div 
-              className="flex items-start gap-2 mt-2 min-w-0 p-2 rounded-md bg-secondary/30 border border-secondary/50 group hover:bg-secondary/50 transition-colors"
+              className={`flex items-start gap-2 mt-2 min-w-0 p-2.5 rounded-md border group cursor-pointer transition-colors ${
+                preview 
+                  ? "bg-amber-50/60 dark:bg-amber-900/20 border-amber-200/50 dark:border-amber-800/50 hover:bg-amber-100/60 dark:hover:bg-amber-900/40" 
+                  : "bg-secondary/30 border-secondary/50 hover:bg-secondary/50"
+              }`}
               onClick={openNote}
             >
-              <StickyNote className="w-3.5 h-3.5 text-muted-foreground/70 mt-0.5 flex-shrink-0" />
-              <p className={`text-[11px] leading-relaxed flex-1 min-w-0 ${preview ? "text-muted-foreground" : "text-muted-foreground/50 italic"}`}>
+              <StickyNote className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${preview ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground/70"}`} />
+              <p className={`text-xs leading-relaxed flex-1 min-w-0 ${preview ? "text-foreground font-medium" : "text-muted-foreground/60 italic"}`}>
                 {preview || "Click to add feedback notes..."}
               </p>
               <button
                 title="Edit note"
-                className="flex-shrink-0 p-1 rounded-full opacity-0 group-hover:opacity-100 bg-background/50 hover:bg-background transition-all text-muted-foreground hover:text-primary"
+                className="flex-shrink-0 p-1.5 -m-1 rounded-full opacity-0 group-hover:opacity-100 bg-background/80 hover:bg-background transition-all text-muted-foreground hover:text-primary shadow-sm"
               >
                 <Pencil className="w-3 h-3" />
               </button>
