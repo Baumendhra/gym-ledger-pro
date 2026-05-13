@@ -18,6 +18,21 @@ export function useMembers() {
   });
 }
 
+/** Updates the notes field for a single member. */
+export function useUpdateNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ memberId, notes }: { memberId: string; notes: string }) => {
+      const { error } = await supabase
+        .from("members")
+        .update({ notes })
+        .eq("id", memberId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
+  });
+}
+
 export function useCreateMember() {
   const qc = useQueryClient();
   return useMutation({

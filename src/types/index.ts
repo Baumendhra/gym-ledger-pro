@@ -8,6 +8,7 @@ export interface Member {
   last_payment_date: string | null;
   next_due_date: string | null;
   last_visit_date: string | null;
+  notes: string | null;
   created_at: string;
 }
 

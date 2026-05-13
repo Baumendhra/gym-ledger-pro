@@ -1,9 +1,11 @@
+import { useState, useRef } from "react";
 import type { MemberWithStatus, PackageType, MembershipPlan } from "@/types";
 import { PLAN_CONFIG } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 import { formatVisitAge } from "@/lib/status";
-import { ChevronRight, MessageCircle, Bell } from "lucide-react";
+import { ChevronRight, MessageCircle, Bell, Pencil, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useUpdateNote } from "@/hooks/useMembers";
 
 interface MemberCardProps {
   member: MemberWithStatus;
@@ -22,13 +24,49 @@ function sendWhatsAppReminder(member: MemberWithStatus) {
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
+/** Returns the first line (up to 80 chars) of a note for the preview. */
+function firstLine(note: string | null): string {
+  if (!note) return "";
+  const line = note.split("\n")[0].trim();
+  return line.length > 80 ? line.slice(0, 80) + "…" : line;
+}
+
 export function MemberCard({ member, onClick, navigateToPayment }: MemberCardProps) {
   const navigate = useNavigate();
+  const updateNote = useUpdateNote();
+
+  // Note editor state
+  const needsNoteSection =
+    member.finalStatus === "At Risk" ||
+    member.finalStatus === "Inactive" ||
+    member.needsReminder;
+
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteValue, setNoteValue] = useState(member.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleClick = () => {
     if (onClick) onClick();
     else if (navigateToPayment) navigate(`/payment?memberId=${member.id}`);
     else navigate(`/member/${member.id}`);
+  };
+
+  const openNote = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNoteOpen(true);
+    setTimeout(() => textareaRef.current?.focus(), 60);
+  };
+
+  const saveNote = async () => {
+    if (noteValue === (member.notes ?? "")) { setNoteOpen(false); return; }
+    setSaving(true);
+    try {
+      await updateNote.mutateAsync({ memberId: member.id, notes: noteValue });
+    } finally {
+      setSaving(false);
+      setNoteOpen(false);
+    }
   };
 
   const pkg       = (member.package_type as PackageType) || "strengthening";
@@ -51,6 +89,8 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
     : visitDays <= 6      ? "text-emerald-600 dark:text-emerald-400"
     : visitDays <= 10     ? "text-yellow-600 dark:text-yellow-400 font-semibold"
     : "text-red-500 dark:text-red-400 font-semibold";
+
+  const preview = firstLine(member.notes);
 
   return (
     <div className={`w-full rounded-lg glass-card transition-all animate-slide-up border ${rowHighlight}`}>
@@ -97,6 +137,22 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
               {member.inactiveReason}
             </p>
           )}
+
+          {/* Note preview — only for At Risk / Inactive / Reminder */}
+          {needsNoteSection && !noteOpen && (
+            <div className="flex items-center gap-1.5 mt-1 min-w-0">
+              <p className={`text-[11px] italic flex-1 min-w-0 truncate ${preview ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+                {preview || "Add note…"}
+              </p>
+              <button
+                onClick={openNote}
+                title="Edit note"
+                className="flex-shrink-0 p-0.5 rounded hover:bg-primary/10 transition-colors text-muted-foreground hover:text-primary"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Status badge + chevron */}
@@ -105,6 +161,44 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </div>
       </button>
+
+      {/* ── Inline note editor — expands below the row ── */}
+      {needsNoteSection && noteOpen && (
+        <div
+          className="px-4 pb-3 pt-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={noteValue}
+              onChange={(e) => setNoteValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setNoteOpen(false); setNoteValue(member.notes ?? ""); }
+              }}
+              placeholder="Write feedback notes about this member…"
+              rows={3}
+              className="w-full text-xs rounded-lg border border-border bg-background/60 px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40 text-foreground leading-relaxed"
+            />
+            <div className="flex items-center justify-end gap-2 mt-1">
+              <button
+                onClick={() => { setNoteOpen(false); setNoteValue(member.notes ?? ""); }}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveNote}
+                disabled={saving}
+                className="flex items-center gap-1 text-[11px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-full px-3 py-0.5 transition-colors"
+              >
+                <Check className="w-3 h-3" />
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* WhatsApp reminder button — only shown when reminder is needed */}
       {member.needsReminder && (
