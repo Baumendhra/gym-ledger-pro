@@ -3,7 +3,7 @@ import type { MemberWithStatus, PackageType, MembershipPlan } from "@/types";
 import { PLAN_CONFIG } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 import { formatVisitAge } from "@/lib/status";
-import { ChevronRight, MessageCircle, Bell, Pencil, Check } from "lucide-react";
+import { ChevronRight, MessageCircle, Bell, Pencil, Check, StickyNote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUpdateNote } from "@/hooks/useMembers";
 
@@ -140,14 +140,17 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
 
           {/* Note preview — only for At Risk / Inactive / Reminder */}
           {needsNoteSection && !noteOpen && (
-            <div className="flex items-center gap-1.5 mt-1 min-w-0">
-              <p className={`text-[11px] italic flex-1 min-w-0 truncate ${preview ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
-                {preview || "Add note…"}
+            <div 
+              className="flex items-start gap-2 mt-2 min-w-0 p-2 rounded-md bg-secondary/30 border border-secondary/50 group hover:bg-secondary/50 transition-colors"
+              onClick={openNote}
+            >
+              <StickyNote className="w-3.5 h-3.5 text-muted-foreground/70 mt-0.5 flex-shrink-0" />
+              <p className={`text-[11px] leading-relaxed flex-1 min-w-0 ${preview ? "text-muted-foreground" : "text-muted-foreground/50 italic"}`}>
+                {preview || "Click to add feedback notes..."}
               </p>
               <button
-                onClick={openNote}
                 title="Edit note"
-                className="flex-shrink-0 p-0.5 rounded hover:bg-primary/10 transition-colors text-muted-foreground hover:text-primary"
+                className="flex-shrink-0 p-1 rounded-full opacity-0 group-hover:opacity-100 bg-background/50 hover:bg-background transition-all text-muted-foreground hover:text-primary"
               >
                 <Pencil className="w-3 h-3" />
               </button>
@@ -168,7 +171,11 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
           className="px-4 pb-3 pt-0"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="relative">
+          <div className="relative bg-secondary/20 p-3 rounded-lg border border-secondary/50 mt-1">
+            <div className="flex items-center gap-1.5 mb-2">
+              <StickyNote className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Feedback Notes</span>
+            </div>
             <textarea
               ref={textareaRef}
               value={noteValue}
@@ -178,22 +185,22 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
               }}
               placeholder="Write feedback notes about this member…"
               rows={3}
-              className="w-full text-xs rounded-lg border border-border bg-background/60 px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40 text-foreground leading-relaxed"
+              className="w-full text-xs rounded-md border border-border/50 bg-background/80 px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40 text-foreground leading-relaxed shadow-sm"
             />
-            <div className="flex items-center justify-end gap-2 mt-1">
+            <div className="flex items-center justify-end gap-2 mt-2.5">
               <button
                 onClick={() => { setNoteOpen(false); setNoteValue(member.notes ?? ""); }}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5"
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full hover:bg-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={saveNote}
                 disabled={saving}
-                className="flex items-center gap-1 text-[11px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-full px-3 py-0.5 transition-colors"
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-full px-4 py-1.5 transition-all shadow-sm"
               >
-                <Check className="w-3 h-3" />
-                {saving ? "Saving…" : "Save"}
+                <Check className="w-3.5 h-3.5" />
+                {saving ? "Saving…" : "Save Note"}
               </button>
             </div>
           </div>
