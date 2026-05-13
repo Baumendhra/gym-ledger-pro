@@ -58,7 +58,8 @@ async function identifyMember(
 
 /**
  * POST /checkin equivalent.
- * Inserts a row into checkins. Returns already_checked_in=true if one exists today.
+ * Checks last_visit_date on the member row. Returns already_checked_in=true if visited today.
+ * Updates last_visit_date — no check_ins table write.
  */
 async function checkInMember(
   memberId: string,
@@ -71,38 +72,25 @@ async function checkInMember(
     throw new Error("Member not identified");
   }
 
-  // Fetch check-ins for the member
-  const { data: existing, error: existErr } = await supabase
-    .from("check_ins")
-    .select("checked_in_at")
-    .eq("member_id", memberId);
+  // Fetch member's last_visit_date to detect duplicate check-in
+  const { data: member, error: fetchErr } = await supabase
+    .from("members")
+    .select("id, last_visit_date")
+    .eq("id", memberId)
+    .eq("user_id", gymId)
+    .maybeSingle();
 
-  if (existErr) console.warn("[checkInMember] duplicate-check error:", existErr);
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!member) throw new Error("Member not found");
 
-  const today = new Date().toDateString();
-  const alreadyChecked = (existing || []).some(c =>
-    new Date(c.checked_in_at).toDateString() === today
-  );
-
-  if (alreadyChecked) {
+  // Duplicate check: already visited today?
+  if (isToday(member.last_visit_date)) {
     console.log("[checkInMember] already checked in today");
     return { already_checked_in: true };
   }
 
-  // 1. Insert check-in record
+  // Update last_visit_date — scoped to this gym for multi-gym safety
   const now = new Date().toISOString();
-  console.log("member_id:", memberId);
-  
-  const { error: insertError } = await supabase
-    .from("check_ins")
-    .insert({ member_id: memberId, checked_in_at: now });
-
-  if (insertError) {
-    console.error("[checkInMember] insert error:", insertError);
-    throw new Error(insertError.message || "Failed to record check-in");
-  }
-
-  // 2. Update last_visit_date — scoped to this gym for multi-gym safety
   console.log("[checkInMember] updating last_visit_date for:", memberId, "gym:", gymId);
   const { error: updateError } = await supabase
     .from("members")
@@ -112,8 +100,7 @@ async function checkInMember(
 
   if (updateError) {
     console.error("[checkInMember] last_visit_date update error:", updateError);
-    // Non-fatal: check-in row is already inserted; surface as warning not hard fail
-    console.warn("Check-in was recorded but last_visit_date could not be updated.");
+    throw new Error(updateError.message || "Failed to record check-in");
   }
 
   return { already_checked_in: false };

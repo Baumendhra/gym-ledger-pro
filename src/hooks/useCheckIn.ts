@@ -52,9 +52,9 @@ export async function verifyMember(member_id: string, last4digits: string): Prom
   return { success: true, member: { id: m.id, name: m.name, phone: m.phone, last_visit_date: m.last_visit_date } };
 }
 
-/** PARTS 2-5 + 7: Check in a verified member. Validates existence, prevents duplicates, syncs both stores. */
+/** PARTS 2-5 + 7: Check in a verified member. Validates existence, prevents duplicates, syncs last_visit_date. */
 export async function checkInMember(member_id: string): Promise<CheckInResult> {
-  // PART 7: Validate member exists (indexed pkey lookup, RLS-scoped)
+  // Validate member exists and read last_visit_date for dup detection (indexed pkey lookup, RLS-scoped)
   const { data: member, error: fetchErr } = await supabase
     .from("members")
     .select("id, name, last_visit_date")
@@ -64,20 +64,14 @@ export async function checkInMember(member_id: string): Promise<CheckInResult> {
   if (fetchErr) return { success: false, error: fetchErr.message, code: "db_error" };
   if (!member) return { success: false, error: "Member not found", code: "not_found" };
 
-  // PART 3 + 7: Duplicate check
+  // Duplicate check — uses last_visit_date as single source of truth
   if (isToday(member.last_visit_date)) {
     return { success: false, error: "Already checked in today", code: "already_checked_in" };
   }
 
   const now = new Date().toISOString();
 
-  // PART 3: Insert into check_ins history FIRST (awaited, not best-effort)
-  const { error: insErr } = await supabase
-    .from("check_ins")
-    .insert({ member_id, checked_in_at: now });
-  if (insErr) return { success: false, error: insErr.message, code: "db_error" };
-
-  // PART 3 + 5: Sync members.last_visit_date with the check-in timestamp
+  // Update last_visit_date — only write needed, no check_ins insert
   const { error: updErr } = await supabase
     .from("members")
     .update({ last_visit_date: now })

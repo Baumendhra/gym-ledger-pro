@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMembers, useCreateMember, useCheckIns } from "@/hooks/useMembers";
+import { useMembers, useCreateMember } from "@/hooks/useMembers";
 import { MemberCard } from "@/components/MemberCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ type FilterType = "All" | "New" | "Active" | "At Risk" | "Inactive" | "Needs Rem
 
 export default function MembersPage() {
   const { data: members = [], isLoading } = useMembers();
-  const { data: checkIns = [] } = useCheckIns();
+
   const createMember = useCreateMember();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -37,15 +37,12 @@ export default function MembersPage() {
     if (urlFilter) setFilter(urlFilter as FilterType);
   }, [searchParams]);
 
-  // Build set of member IDs who checked in today
-  const todayStr = new Date().toDateString();
+  // Build set of member IDs who visited today — derived from members.last_visit_date directly
+  const todayStr = new Date().toISOString().slice(0, 10);
   const attendedTodayIds = new Set(
-    checkIns
-      .filter((c) => {
-        try { return new Date(c.checked_in_at).toDateString() === todayStr; }
-        catch { return false; }
-      })
-      .map((c) => c.member_id)
+    members
+      .filter((m) => m.last_visit_date && m.last_visit_date.slice(0, 10) === todayStr)
+      .map((m) => m.id)
   );
 
   const filtered = members

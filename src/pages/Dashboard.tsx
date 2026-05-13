@@ -1,4 +1,4 @@
-import { useMembers, useCheckIns } from "@/hooks/useMembers";
+import { useMembers } from "@/hooks/useMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotificationTrigger } from "@/hooks/useNotificationTrigger";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +24,7 @@ import {
 
 export default function Dashboard() {
   const { data: members = [], isLoading } = useMembers();
-  const { data: checkIns = [] } = useCheckIns();
+
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { alerts, handledMemberIds, loading: alertsLoading } = useAdminAlerts();
@@ -73,9 +73,11 @@ export default function Dashboard() {
   const overdueMembers10 = members.filter((m) => m.isOverdue10Days);
 
   // ── Attendance calculations ────────────────────────────────────────────────
-  // useCheckIns() now only returns today's check-ins (filtered at DB level),
-  // so we just deduplicate by member_id to get the unique count.
-  const todayAttendance = new Set(checkIns.map(c => c.member_id)).size;
+  // Derived directly from members.last_visit_date — no check_ins table needed.
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayAttendance = members.filter(
+    (m) => m.last_visit_date && m.last_visit_date.slice(0, 10) === todayStr
+  ).length;
 
   const monthName = new Date().toLocaleDateString("en-IN", { month: "long" });
 

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMembers, usePayments, useDeleteMember, useCheckIns } from "@/hooks/useMembers";
+import { useMembers, usePayments, useDeleteMember } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatCurrency, daysSinceVisit, formatVisitAge } from "@/lib/status";
-import { exportPaymentsCSV, exportMemberAttendanceCSV } from "@/lib/export";
+import { exportPaymentsCSV } from "@/lib/export";
 import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -15,13 +15,10 @@ export default function MemberDetail() {
   const navigate = useNavigate();
   const { data: members = [] } = useMembers();
   const { data: payments = [], isLoading } = usePayments(id || "");
-  const { data: allCheckIns = [] } = useCheckIns();
   const deleteMember = useDeleteMember();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const member = members.find((m) => m.id === id);
-  // Filter check_ins to only this member's records
-  const memberCheckIns = allCheckIns.filter((c) => c.member_id === id);
 
   // ── Notification Activity (additive layer) ────────────────────────────────────
   const [notifLogs, setNotifLogs] = useState<NotificationLog[]>([]);
