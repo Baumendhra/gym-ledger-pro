@@ -26,6 +26,7 @@ export type Database = {
           notes: string | null
           package_type: string | null
           phone: string
+          profile_image_url: string | null
           user_id: string
         }
         Insert: {
@@ -39,6 +40,7 @@ export type Database = {
           notes?: string | null
           package_type?: string | null
           phone: string
+          profile_image_url?: string | null
           user_id: string
         }
         Update: {
@@ -52,6 +54,7 @@ export type Database = {
           notes?: string | null
           package_type?: string | null
           phone?: string
+          profile_image_url?: string | null
           user_id?: string
         }
         Relationships: []

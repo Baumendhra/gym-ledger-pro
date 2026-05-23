@@ -33,6 +33,40 @@ export function useUpdateNote() {
   });
 }
 
+export function useUpdateProfileImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ memberId, file }: { memberId: string; file: File }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${memberId}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('member_profiles')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('member_profiles')
+        .getPublicUrl(filePath);
+
+      // Update members table
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ profile_image_url: publicUrl })
+        .eq('id', memberId);
+
+      if (updateError) throw updateError;
+      
+      return publicUrl;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
+  });
+}
+
 export function useCreateMember() {
   const qc = useQueryClient();
   return useMutation({
@@ -139,6 +173,22 @@ export function useDeleteMember() {
         .delete()
         .eq("member_id", memberId);
       if (paymentsError) throw paymentsError;
+
+      // Delete the profile image if it exists
+      const { data: member } = await supabase
+        .from("members")
+        .select("profile_image_url")
+        .eq("id", memberId)
+        .single();
+        
+      if (member?.profile_image_url) {
+        // Extract the filename from the URL
+        const urlParts = member.profile_image_url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        if (fileName) {
+          await supabase.storage.from('member_profiles').remove([fileName]);
+        }
+      }
 
       // Now delete the member
       const { error: memberError } = await supabase

@@ -9,6 +9,7 @@ export interface Member {
   next_due_date: string | null;
   last_visit_date: string | null;
   notes: string | null;
+  profile_image_url?: string | null;
   created_at: string;
 }
 

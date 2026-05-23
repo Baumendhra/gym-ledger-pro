@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMembers, usePayments, useDeleteMember } from "@/hooks/useMembers";
+import { useMembers, usePayments, useDeleteMember, useUpdateProfileImage } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatCurrency, daysSinceVisit, formatVisitAge } from "@/lib/status";
 import { exportPaymentsCSV } from "@/lib/export";
-import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck, Bell } from "lucide-react";
+import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck, Bell, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PLAN_CONFIG } from "@/types";
@@ -19,6 +19,31 @@ export default function MemberDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const member = members.find((m) => m.id === id);
+
+  const updateProfileImage = useUpdateProfileImage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !id) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    try {
+      await updateProfileImage.mutateAsync({ memberId: id, file });
+      toast.success('Profile picture updated');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to update profile picture');
+    }
+  };
 
   // ── Notification Activity (additive layer) ────────────────────────────────────
   const [notifLogs, setNotifLogs] = useState<NotificationLog[]>([]);
@@ -78,9 +103,31 @@ export default function MemberDetail() {
 
       {/* Profile Header */}
       <div className="glass-card rounded-xl p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-xl">
-          {member.name.charAt(0)}
+        <div 
+          className="relative w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-xl overflow-hidden cursor-pointer group flex-shrink-0 border border-primary/20"
+          onClick={handleImageClick}
+        >
+          {member.profile_image_url ? (
+            <img src={member.profile_image_url} alt={member.name} className="w-full h-full object-cover" />
+          ) : (
+            member.name.charAt(0).toUpperCase()
+          )}
+          
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            {updateProfileImage.isPending ? (
+              <Loader2 className="w-5 h-5 text-white animate-spin" />
+            ) : (
+              <Camera className="w-5 h-5 text-white" />
+            )}
+          </div>
         </div>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*" 
+          onChange={handleFileChange} 
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-lg font-bold truncate">{member.name}</h1>

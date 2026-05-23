@@ -99,8 +99,12 @@ export function MemberCard({ member, onClick, navigateToPayment }: MemberCardPro
         className="w-full flex items-center gap-3 p-4 text-left hover:opacity-90 active:scale-[0.98] transition-all"
       >
         {/* Avatar */}
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-sm">
-          {member.name.charAt(0).toUpperCase()}
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-sm overflow-hidden">
+          {member.profile_image_url ? (
+            <img src={member.profile_image_url} alt={member.name} className="w-full h-full object-cover" />
+          ) : (
+            member.name.charAt(0).toUpperCase()
+          )}
         </div>
 
         {/* Info */}
