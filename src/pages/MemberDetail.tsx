@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useMembers, usePayments, useDeleteMember, useUpdateProfileImage } from "@/hooks/useMembers";
+import { useMembers, usePayments, useDeleteMember, useUpdateProfileImage, useRemoveProfileImage } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatCurrency, daysSinceVisit, formatVisitAge } from "@/lib/status";
 import { exportPaymentsCSV } from "@/lib/export";
-import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck, Bell, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, Phone, CreditCard, Banknote, Download, MessageCircle, Trash2, UserCheck, Bell, Camera, Loader2, ImagePlus, X, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PLAN_CONFIG } from "@/types";
 import { getMemberNotificationLogs, handleNotificationAction, type NotificationLog } from "@/services/pushNotifications";
@@ -21,10 +22,16 @@ export default function MemberDetail() {
   const member = members.find((m) => m.id === id);
 
   const updateProfileImage = useUpdateProfileImage();
+  const removeProfileImage = useRemoveProfileImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showImageDialog, setShowImageDialog] = useState(false);
 
   const handleImageClick = () => {
-    fileInputRef.current?.click();
+    if (member?.profile_image_url) {
+      setShowImageDialog(true);
+    } else {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,9 +46,22 @@ export default function MemberDetail() {
     try {
       await updateProfileImage.mutateAsync({ memberId: id, file });
       toast.success('Profile picture updated');
+      setShowImageDialog(false);
     } catch (error) {
       console.error(error);
       toast.error('Failed to update profile picture');
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (!id) return;
+    try {
+      await removeProfileImage.mutateAsync(id);
+      toast.success('Profile picture removed');
+      setShowImageDialog(false);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to remove profile picture');
     }
   };
 
@@ -353,6 +373,63 @@ export default function MemberDetail() {
           </div>
         </div>
       )}
+
+      {/* Profile Image Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent className="max-w-md mx-4 overflow-hidden p-0 border-0 bg-transparent shadow-none gap-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Profile Photo</DialogTitle>
+            <DialogDescription>View or change profile photo</DialogDescription>
+          </DialogHeader>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 z-10 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full"
+              onClick={() => setShowImageDialog(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            {member.profile_image_url && (
+              <div className="w-full aspect-square bg-black flex items-center justify-center">
+                <img 
+                  src={member.profile_image_url} 
+                  alt={member.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="flex bg-background p-4 gap-3 rounded-b-2xl shadow-xl">
+              <Button 
+                variant="outline" 
+                className="flex-1 gap-2 border-primary/20 hover:bg-primary/5"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={updateProfileImage.isPending}
+              >
+                {updateProfileImage.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                ) : (
+                  <ImagePlus className="w-4 h-4 text-primary" />
+                )}
+                Change
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex-1 gap-2 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                onClick={handleRemoveImage}
+                disabled={removeProfileImage.isPending}
+              >
+                {removeProfileImage.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash className="w-4 h-4" />
+                )}
+                Remove
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

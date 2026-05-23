@@ -67,6 +67,35 @@ export function useUpdateProfileImage() {
   });
 }
 
+export function useRemoveProfileImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (memberId: string) => {
+      const { data: member } = await supabase
+        .from("members")
+        .select("profile_image_url")
+        .eq("id", memberId)
+        .single();
+        
+      if (member?.profile_image_url) {
+        const urlParts = member.profile_image_url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        if (fileName) {
+          await supabase.storage.from('member_profiles').remove([fileName]);
+        }
+      }
+
+      const { error } = await supabase
+        .from("members")
+        .update({ profile_image_url: null })
+        .eq("id", memberId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
+  });
+}
+
 export function useCreateMember() {
   const qc = useQueryClient();
   return useMutation({
