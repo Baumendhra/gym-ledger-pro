@@ -53,15 +53,18 @@ export function useUpdateProfileImage() {
         .from('member_profiles')
         .getPublicUrl(filePath);
 
+      // Append timestamp to prevent browser caching
+      const urlWithCacheBuster = `${publicUrl}?v=${Date.now()}`;
+
       // Update members table
       const { error: updateError } = await supabase
         .from('members')
-        .update({ profile_image_url: publicUrl })
+        .update({ profile_image_url: urlWithCacheBuster })
         .eq('id', memberId);
 
       if (updateError) throw updateError;
       
-      return publicUrl;
+      return urlWithCacheBuster;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
   });
@@ -79,7 +82,10 @@ export function useRemoveProfileImage() {
         
       if (member?.profile_image_url) {
         const urlParts = member.profile_image_url.split('/');
-        const fileName = urlParts[urlParts.length - 1];
+        let fileName = urlParts[urlParts.length - 1];
+        if (fileName.includes('?')) {
+          fileName = fileName.split('?')[0];
+        }
         if (fileName) {
           await supabase.storage.from('member_profiles').remove([fileName]);
         }
@@ -213,7 +219,10 @@ export function useDeleteMember() {
       if (member?.profile_image_url) {
         // Extract the filename from the URL
         const urlParts = member.profile_image_url.split('/');
-        const fileName = urlParts[urlParts.length - 1];
+        let fileName = urlParts[urlParts.length - 1];
+        if (fileName.includes('?')) {
+          fileName = fileName.split('?')[0];
+        }
         if (fileName) {
           await supabase.storage.from('member_profiles').remove([fileName]);
         }
