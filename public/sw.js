@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymkhata-pro-v5'; // Incremented to bust the old faulty cache
+const CACHE_NAME = 'gymkhata-pro-v6'; // Incremented to bust the old faulty cache
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -65,7 +65,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For API requests, bypass cache and let the browser handle it naturally
-  if (event.request.url.includes('/supabase.co') || event.request.url.includes('/rest/v1/')) {
+  if (event.request.url.includes('.supabase.co') || event.request.url.includes('/rest/v1/')) {
     return;
   }
 
