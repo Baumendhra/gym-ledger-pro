@@ -279,6 +279,74 @@ export async function sendPushToMember(
   }
 }
 
+/**
+ * OPTIMIZED variant: accepts pre-fetched subscriptions to avoid any DB query.
+ * Called by useNotificationTrigger after batch-fetching all subscriptions.
+ */
+export async function sendPushToMemberWithData(
+  memberId: string,
+  memberName: string,
+  type: NotificationType,
+  supabaseAnonKey: string,
+  subs: Array<{ endpoint: string; p256dh: string; auth: string }>
+): Promise<boolean> {
+  try {
+    let title: string;
+    let body: string;
+    if (type === "at_risk") {
+      title = `Hey ${memberName.split(" ")[0]} 👋`;
+      body  = "It's been a few days — don't lose your streak 💪";
+    } else {
+      title = `Hi ${memberName.split(" ")[0]} 😔`;
+      body  = "We miss you! Come back strong 💪";
+    }
+
+    let anySuccess = false;
+    for (const sub of subs) {
+      const response = await fetch(SEND_PUSH_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey":        supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          subscription: { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          title,
+          body,
+          data: { type, member_id: memberId, gym_phone: GYM_PHONE },
+        }),
+      });
+
+      if (response.status === 410) {
+        await supabase.from("push_subscriptions").delete()
+          .eq("member_id", memberId).eq("endpoint", sub.endpoint);
+        continue;
+      }
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("[pushNotifications] Edge Function error:", errText);
+        await supabase.from("notification_logs").insert({
+          member_id: memberId, type: "failed_push",
+          message: "Push not delivered: Edge function error", status: "failed",
+        });
+        continue;
+      }
+      anySuccess = true;
+    }
+
+    if (anySuccess) {
+      console.log(`[pushNotifications] ✅ Sent ${type} to ${memberName}`);
+    }
+    return anySuccess;
+  } catch (err) {
+    console.error("[pushNotifications] sendPushToMemberWithData error:", err);
+    return false;
+  }
+}
+
+
 // ── Action Handling ──────────────────────────────────────────────────────────
 
 /**
