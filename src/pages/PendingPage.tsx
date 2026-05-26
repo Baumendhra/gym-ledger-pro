@@ -2,7 +2,7 @@ import { useMembers, useCreatePayment } from "@/hooks/useMembers";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency } from "@/lib/status";
-import { MessageCircle, IndianRupee } from "lucide-react";
+import { MessageCircle, IndianRupee, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { PLAN_CONFIG } from "@/types";
 
@@ -93,6 +93,16 @@ export default function PendingPage() {
                   onClick={() => handleWhatsApp(m.name, m.phone)}
                 >
                   <MessageCircle className="w-3.5 h-3.5" /> Remind
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                  asChild
+                >
+                  <a href={`tel:${m.phone}`}>
+                    <Phone className="w-3.5 h-3.5" />
+                  </a>
                 </Button>
               </div>
             </div>
