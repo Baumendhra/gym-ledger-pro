@@ -16,7 +16,14 @@ import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
 import { handleNotificationAction } from "@/services/pushNotifications";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 /** Global listener: routes SW 'pn-action' messages to DB update */
 function useSWNotificationListener() {

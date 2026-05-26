@@ -5,16 +5,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { type Member, type Payment, type MembershipPlan, type PackageType, PLAN_CONFIG } from "@/types";
 
 export function useMembers() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["members"],
+    queryKey: ["members", user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("members")
-        .select("*")
+        .select("id, name, phone, package_type, membership_plan, last_visit_date, last_payment_date, next_due_date, notes, profile_image_url, created_at, user_id")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as any[]).map(getMemberStatus);
     },
+    enabled: !!user?.id,
   });
 }
 
@@ -137,7 +141,7 @@ export function usePayments(memberId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("*")
+        .select("id, member_id, amount, mode, note, date, package_type, membership_plan")
         .eq("member_id", memberId)
         .order("date", { ascending: false });
       if (error) throw error;

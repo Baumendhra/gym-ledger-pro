@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface AdminAlert {
   id: string;
@@ -11,11 +12,14 @@ export interface AdminAlert {
 }
 
 export function useAdminAlerts() {
+  const { user } = useAuth();
   const [alerts, setAlerts] = useState<AdminAlert[]>([]);
   const [handledMemberIds, setHandledMemberIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) return;
+
     async function fetchAlerts() {
       setLoading(true);
       const todayStart = new Date();
@@ -23,7 +27,11 @@ export function useAdminAlerts() {
 
       const { data, error } = await supabase
         .from("notification_logs")
-        .select("id, member_id, type, message, sent_at, status")
+        .select(`
+          id, member_id, type, message, sent_at, status,
+          members!inner (user_id)
+        `)
+        .eq("members.user_id", user.id)
         .gte("sent_at", todayStart.toISOString())
         .order("sent_at", { ascending: false });
 
@@ -69,7 +77,7 @@ export function useAdminAlerts() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   return { alerts, handledMemberIds, loading };
 }
