@@ -1,6 +1,5 @@
 import { useMembers } from "@/hooks/useMembers";
 import { supabase } from "@/integrations/supabase/client";
-import { useNotificationTrigger } from "@/hooks/useNotificationTrigger";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/StatCard";
 import { MemberCard } from "@/components/MemberCard";
@@ -8,13 +7,12 @@ import { exportDailyCSV, exportMonthlyMembersCSV, exportAttendanceCSV } from "@/
 import {
   Users, AlertTriangle, Clock, Dumbbell,
   LogOut, Download, FileText, CalendarDays,
-  Heart, Zap, TrendingUp, UserCheck, Bell, ShieldAlert,
-  BellRing, Smartphone, ShieldOff, MessageCircle, XCircle
+  Heart, Zap, TrendingUp, UserCheck, ShieldAlert,
+  Bell, Smartphone, ShieldOff, MessageCircle, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { useAdminAlerts } from "@/hooks/useAdminAlerts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +25,6 @@ export default function Dashboard() {
 
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const { alerts, handledMemberIds, loading: alertsLoading } = useAdminAlerts();
 
   // Generate dynamic WhatsApp fallback
   const sendWhatsApp = async (e: React.MouseEvent, phone: string, memberId: string, name: string, type: "at_risk" | "reminder") => {
@@ -42,14 +39,6 @@ export default function Dashboard() {
 
     // Open synchronously to prevent browser popup blockers
     window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, "_blank");
-
-    // Log the manual fallback to dismiss the alert from the Admin Notification Center
-    await supabase.from("notification_logs").insert({
-      member_id: memberId,
-      type: "whatsapp_fallback",
-      message: "Handled manually via WhatsApp",
-      status: "fallback"
-    });
   };
 
   // ── Category counts ───────────────────────────────────────────────────────
@@ -62,9 +51,6 @@ export default function Dashboard() {
   const inactiveMembers = members.filter((m) => m.finalStatus === "Inactive");
   const newMembers = members.filter((m) => m.finalStatus === "New");
   const reminderMembers = members.filter((m) => m.needsReminder);
-
-  // ── Auto push notifications (additive layer — no existing logic changed) ──
-  useNotificationTrigger(atRiskMembers, reminderMembers);
 
   // ── Payment counts ────────────────────────────────────────────────────────
   const overdueMembers = members.filter((m) => m.paymentStatus === "overdue");
@@ -83,11 +69,6 @@ export default function Dashboard() {
 
   const handleLogout = async () => { await signOut(); toast.success("Signed out"); };
 
-  // ── Unhandled Notifications for Dropdown ──────────────────────────────────
-  const unhandledAtRisk = atRiskMembers.filter(m => !handledMemberIds.has(m.id));
-  const unhandledReminder = reminderMembers.filter(m => !handledMemberIds.has(m.id));
-  const totalAlertCount = unhandledAtRisk.length + unhandledReminder.length + alerts.length;
-
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto space-y-6">
 
@@ -103,72 +84,6 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-1 items-center">
-          {/* ── Admin Notification Center ── */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative" title="Notifications">
-                <BellRing className="w-5 h-5" />
-                {totalAlertCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto">
-              <div className="px-3 py-2 text-sm font-semibold border-b flex items-center justify-between">
-                <span>⚠️ Member Attention Needed</span>
-                <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">
-                  {totalAlertCount}
-                </span>
-              </div>
-
-              {unhandledAtRisk.map((m) => (
-                <DropdownMenuItem key={`atrisk-${m.id}`} onClick={() => navigate(`/member/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-medium text-amber-500 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> {m.name} added to At Risk list</span>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.id, m.name, "at_risk")}>
-                    <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
-                  </Button>
-                </DropdownMenuItem>
-              ))}
-
-              {unhandledReminder.map((m) => (
-                <DropdownMenuItem key={`rem-${m.id}`} onClick={() => navigate(`/member/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="font-medium text-red-400 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {m.name} needs reminder</span>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.id, m.name, "reminder")}>
-                    <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
-                  </Button>
-                </DropdownMenuItem>
-              ))}
-
-              {alerts.map((a) => {
-                const m = members.find(x => x.id === a.member_id);
-                if (!m) return null;
-                return (
-                  <DropdownMenuItem key={a.id} onClick={() => navigate(`/member/${m.id}`)} className="flex flex-col items-start gap-1 p-3 cursor-pointer border-t border-border/50">
-                    <div className="flex items-center gap-1.5 font-medium text-muted-foreground w-full">
-                      {a.type === "failed_push" && <XCircle className="w-3.5 h-3.5 text-red-500" />}
-                      {a.type === "iphone_limitation" && <Smartphone className="w-3.5 h-3.5 text-blue-400" />}
-                      {a.type === "no_permission" && <ShieldOff className="w-3.5 h-3.5 text-yellow-500" />}
-                      <span className="truncate">{m.name}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{a.message}</span>
-                    <Button variant="outline" size="sm" className="w-full mt-1 h-7 text-xs" onClick={(e) => sendWhatsApp(e, m.phone, m.id, m.name, "at_risk")}>
-                      <MessageCircle className="w-3 h-3 mr-1.5 text-green-500" /> WhatsApp Fallback
-                    </Button>
-                  </DropdownMenuItem>
-                );
-              })}
-
-              {totalAlertCount === 0 && (
-                <div className="py-6 text-center text-muted-foreground text-sm">
-                  No alerts right now.
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
