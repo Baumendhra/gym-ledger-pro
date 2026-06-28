@@ -1,6 +1,6 @@
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+import { createClient } from '@supabase/supabase-js';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * MIGRATION SCRIPT: Supabase Storage Bucket to Supabase Storage Bucket
@@ -12,21 +12,41 @@ const path = require('path');
  */
 
 // --- OLD LOVABLE PROJECT DETAILS ---
-const OLD_SUPABASE_URL = 'https://YOUR_OLD_PROJECT_ID.supabase.co';
-const OLD_SUPABASE_ANON_KEY = 'YOUR_OLD_ANON_KEY';
-const OLD_BUCKET_NAME = 'members'; // Assuming 'members' is the bucket name
+const OLD_SUPABASE_URL = 'https://qvxehugalkhogajqwhve.supabase.co';
+const OLD_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2eGVodWdhbGtob2dhanF3aHZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTMyODUsImV4cCI6MjA5MDI4OTI4NX0.tfj5ciiEOB92zCWQnJZZgkXIR3e6pcKsKbBEW_8nwAM';
+const OLD_BUCKET_NAME = 'member_profiles'; 
 
 // --- NEW SUPABASE PROJECT DETAILS ---
-const NEW_SUPABASE_URL = 'https://YOUR_NEW_PROJECT_ID.supabase.co';
+const NEW_SUPABASE_URL = 'https://biwgjrvxyfjxweqwbibl.supabase.co';
 // WARNING: You should ideally use the SERVICE ROLE KEY here to bypass RLS for uploading
-const NEW_SUPABASE_KEY = 'YOUR_NEW_SERVICE_ROLE_KEY'; 
-const NEW_BUCKET_NAME = 'members'; 
+const NEW_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpd2dqcnZ4eWZqeHdlcXdiaWJsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTc4ODM1OSwiZXhwIjoyMDk1MzY0MzU5fQ.3Kc5VGq5Sdf564vEHFZPAxpEaJ51q026iMmgaownd28'; 
+const NEW_BUCKET_NAME = 'member_profiles'; 
 
 const oldSupabase = createClient(OLD_SUPABASE_URL, OLD_SUPABASE_ANON_KEY);
 const newSupabase = createClient(NEW_SUPABASE_URL, NEW_SUPABASE_KEY);
 
 async function migrateImages() {
   console.log(`Starting migration from ${OLD_BUCKET_NAME} to ${NEW_BUCKET_NAME}...`);
+
+  // 0. Ensure the new bucket exists
+  const { data: buckets, error: bucketsErr } = await newSupabase.storage.listBuckets();
+  if (bucketsErr) {
+    console.error('Error listing buckets in new project:', bucketsErr);
+    return;
+  }
+  const bucketExists = buckets.some(b => b.name === NEW_BUCKET_NAME);
+  if (!bucketExists) {
+    console.log(`Bucket '${NEW_BUCKET_NAME}' not found in new project. Creating it as public...`);
+    const { error: createErr } = await newSupabase.storage.createBucket(NEW_BUCKET_NAME, {
+      public: true,
+      allowedMimeTypes: ['image/*'],
+      fileSizeLimit: 5242880 // 5MB
+    });
+    if (createErr) {
+      console.error('Failed to create bucket:', createErr);
+      return;
+    }
+  }
 
   // 1. List all files in the old bucket
   const { data: files, error: listError } = await oldSupabase.storage

@@ -2,7 +2,7 @@
 -- Execute this in the Supabase SQL Editor of your new project before importing CSVs.
 
 -- 1. Profiles Table
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id uuid NOT NULL DEFAULT auth.uid() PRIMARY KEY,
     owner_name text,
     gym_name text NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE public.profiles (
 -- ALTER TABLE public.profiles ADD CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 -- 2. Members Table
-CREATE TABLE public.members (
+CREATE TABLE IF NOT EXISTS public.members (
     id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     name text NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE public.members (
 );
 
 -- 3. Payments Table
-CREATE TABLE public.payments (
+CREATE TABLE IF NOT EXISTS public.payments (
     id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
     member_id uuid NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
     amount numeric NOT NULL,
@@ -47,7 +47,20 @@ ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies
--- Profiles
+-- Profiles (Drop existing policies first to avoid duplicates, or just ignore errors if you run it once)
+DO $$
+BEGIN
+    DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+    
+    DROP POLICY IF EXISTS "Users can manage their own gym's members" ON public.members;
+    DROP POLICY IF EXISTS "Anon can view members for checkin" ON public.members;
+    DROP POLICY IF EXISTS "Anon can update members for checkin" ON public.members;
+    
+    DROP POLICY IF EXISTS "Users can manage payments for their members" ON public.payments;
+END $$;
+
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
