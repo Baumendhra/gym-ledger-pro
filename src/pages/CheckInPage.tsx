@@ -142,7 +142,12 @@ type Phase =
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function CheckInPage() {
   const [searchParams] = useSearchParams();
-  const gymId = searchParams.get("gym_id") ?? "";
+  let gymId = searchParams.get("gym_id") ?? "";
+
+  // Seamlessly redirect old printed QR codes to the new database ID
+  if (gymId === "97a72078-4bcb-4ec4-adf8-6312c80ef85f") {
+    gymId = "32f1ba2b-bdbc-4a35-b716-750d5790a896";
+  }
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [memberName, setMemberName] = useState("");
